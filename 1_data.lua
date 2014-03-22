@@ -1,6 +1,8 @@
 require 'csv'
 require 'xlua'
 require 'paths'
+local gm = require 'graphicsmagick'
+
 print('==> Loading data')
 if not paths.filep('data.t7') then
    local csvdata = csv.load{path='data/training_solutions_rev1.csv', verbose=false}
@@ -53,28 +55,6 @@ else
    nSamples = data:size(1)
 end
 print('Number of Samples: ' .. nSamples)
-
--- split into training/testing 80/20
-nTraining = math.floor(nSamples * 0.8)
-nTesting = nSamples - nTraining
-print('Training samples: ' .. nTraining)
-print('Testing samples: ' .. nTesting)
-
-local randIndices = torch.randperm(nSamples)
-local trIndices = randIndices[{{1,nTraining}}]
-local tsIndices = randIndices[{{nTraining+1,nSamples}}]
-
-trainData = torch.Tensor(nTraining, 38)
-testData = torch.Tensor(nTesting, 38)
-for i=1,nTraining do
-   trainData[i] = data[trIndices[i]]
-end
-
-for i=1,nTesting do
-   testData[i] = data[tsIndices[i]]
-end
-
-
 function originalToNormalized(s)
    o = s:clone()
 
@@ -236,3 +216,47 @@ for i=1,nSamples do
    normalizedData[i] = output
 end
 
+-- split into training/testing 80/20
+nTraining = math.floor(nSamples * 0.8)
+nTesting = nSamples - nTraining
+print('Training samples: ' .. nTraining)
+print('Testing samples: ' .. nTesting)
+
+local randIndices = torch.randperm(nSamples)
+local trIndices = randIndices[{{1,nTraining}}]
+local tsIndices = randIndices[{{nTraining+1,nSamples}}]
+
+trainData = torch.Tensor(nTraining, 38)
+testData = torch.Tensor(nTesting, 38)
+for i=1,nTraining do
+   trainData[i] = normalizedData[trIndices[i]]
+end
+
+for i=1,nTesting do
+   testData[i] = normalizedData[tsIndices[i]]
+end
+
+function getSample()
+   local i = math.floor(torch.uniform(1, nTraining+0.5))
+   local filename = paths.concat(dataroot, tostring(trainData[i][1]) .. '.jpg')
+   local im = gm.Image()
+   im:load(filename, sampleSize[2], sampleSize[3])
+   im:size(sampleSize[2], sampleSize[3])
+   im = im:toTensor('float', 'RGB', 'DHW', true)
+   local gt = trainData[i][{{2, 38}}]
+   return im, gt
+end
+
+function getBatch(n)
+   local img, gt
+   img = torch.Tensor(n, sampleSize[1], sampleSize[2], sampleSize[3])
+   gt = torch.Tensor(n, 37)
+   for i=1,n do
+      img[i], gt[i] = getSample()
+   end
+   return img, gt
+end
+
+a,b = getBatch(128)
+print(#a)
+print(#b)
