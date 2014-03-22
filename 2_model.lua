@@ -4,14 +4,20 @@ require 'nnx'
 
 -- features size
 
-featuresOut = 16 * 18 * 18
+featuresOut = 128
 
 -- classifier size
 classifierHidden = {100, 100}
 dropout_p = 0.5
 
 features = nn.Sequential()
-features:add(nn.SpatialConvolution(3, 16, 7, 7))
+features:add(nn.SpatialConvolution(3, 32, 9, 9))
+features:add(nn.Threshold(0,1e-6))
+features:add(nn.SpatialMaxPooling(2,2,2,2))
+features:add(nn.SpatialConvolution(32, 64, 9, 9))
+features:add(nn.Threshold(0,1e-6))
+features:add(nn.SpatialMaxPooling(2,2,2,2))
+features:add(nn.SpatialConvolution(64, 128, 6, 6))
 features:add(nn.Reshape(featuresOut))
 
 dropouts = {}

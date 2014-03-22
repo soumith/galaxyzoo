@@ -159,6 +159,13 @@ function originalToNormalized(s)
 end
 
 function normalizedToOriginal(s)
+   local prune = false
+   if s:size(1) == 37 then
+      local t = torch.zeros(38)
+      t[{{2,38}}] = s
+      s = t
+      prune = true
+   end
    -- sample is a tensor of size 38.
    local o = s:clone()
    -- class 2
@@ -203,6 +210,9 @@ function normalizedToOriginal(s)
    o[27] = o[27] * o[5]
    o[28] = o[28] * o[5]
    o[29] = o[29] * o[5]
+   if prune then
+      o = o[{{2,38}}]
+   end
    return o
 end
 
@@ -216,8 +226,8 @@ for i=1,nSamples do
    normalizedData[i] = output
 end
 
--- split into training/testing 80/20
-nTraining = math.floor(nSamples * 0.8)
+-- split into training/testing 90/10
+nTraining = math.floor(nSamples * 0.90)
 nTesting = nSamples - nTraining
 print('Training samples: ' .. nTraining)
 print('Testing samples: ' .. nTesting)
@@ -228,12 +238,14 @@ local tsIndices = randIndices[{{nTraining+1,nSamples}}]
 
 trainData = torch.Tensor(nTraining, 38)
 testData = torch.Tensor(nTesting, 38)
+unnormalizedTestData = torch.Tensor(nTesting, 38)
 for i=1,nTraining do
    trainData[i] = normalizedData[trIndices[i]]
 end
 
 for i=1,nTesting do
    testData[i] = normalizedData[tsIndices[i]]
+   unnormalizedTestData[i] = data[tsIndices[i]]
 end
 
 function getSample()
@@ -264,7 +276,8 @@ function getTest(i)
    im:size(sampleSize[2], sampleSize[3])
    im = im:toTensor('float', 'RGB', 'DHW', true)
    local gt = testData[i][{{2, 38}}]
-   return im, gt
+   local gtu = unnormalizedTestData[i][{{2,38}}]
+   return im, gt, gtu
 end
 
 a,b = getBatch(128)
