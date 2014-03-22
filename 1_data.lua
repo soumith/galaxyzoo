@@ -257,6 +257,23 @@ function getBatch(n)
    return img, gt
 end
 
+local testTracker = 1
+function getTest(n)
+   local done = false
+   local i = testTracker
+   local filename = paths.concat(dataroot, tostring(testData[i][1]) .. '.jpg')
+   local im = gm.Image()
+   im:load(filename, sampleSize[2], sampleSize[3])
+   im:size(sampleSize[2], sampleSize[3])
+   im = im:toTensor('float', 'RGB', 'DHW', true)
+   local gt = trainData[i][{{2, 38}}]
+
+   if testTracker == nTesting then
+      testTracker = 1; done = true
+   end
+   return im, gt, done
+end
+
 a,b = getBatch(128)
 print(#a)
 print(#b)
