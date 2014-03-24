@@ -5,20 +5,28 @@ require 'cunn'
 
 -- features size
 
-featuresOut = 128
+featuresOut = 1024
 
 -- classifier size
-classifierHidden = {128}
+classifierHidden = {1024}
 dropout_p = 0.5
 
 features = nn.Sequential()
-features:add(nn.SpatialConvolutionCUDA(3, 32, 9, 9))
+features:add(nn.SpatialConvolutionCUDA(3, 96, 11, 11, 4, 4)) -- (223 - 11 + 4)/4 = 54
 features:add(nn.Threshold(0,1e-6))
-features:add(nn.SpatialMaxPoolingCUDA(2,2,2,2))
-features:add(nn.SpatialConvolutionCUDA(32, 64, 9, 9))
+features:add(nn.SpatialMaxPoolingCUDA(2,2,2,2)) -- 27
+features:add(nn.SpatialConvolutionCUDA(96, 256, 5, 5)) -- 23
 features:add(nn.Threshold(0,1e-6))
-features:add(nn.SpatialMaxPoolingCUDA(2,2,2,2))
-features:add(nn.SpatialConvolutionCUDA(64, 128, 6, 6))
+features:add(nn.SpatialMaxPoolingCUDA(2,2,2,2)) -- 11
+features:add(nn.SpatialConvolutionCUDA(256, 512, 3, 3)) -- 9
+features:add(nn.Threshold(0,1e-6))
+features:add(nn.SpatialConvolutionCUDA(512, 1024, 3, 3)) -- 7
+features:add(nn.Threshold(0,1e-6))
+features:add(nn.SpatialConvolutionCUDA(1024, 1024, 3, 3)) -- 5
+features:add(nn.Threshold(0,1e-6))
+features:add(nn.SpatialConvolutionCUDA(1024, 1024, 3, 3)) -- 3
+features:add(nn.Threshold(0,1e-6))
+features:add(nn.SpatialMaxPoolingCUDA(2,2,2,2)) 
 features:add(nn.Transpose({4,1},{4,2},{4,3}))
 features:add(nn.Reshape(featuresOut))
 
@@ -142,4 +150,11 @@ criterion = nn.MSECriterion()
 model = model:cuda()
 criterion = criterion:cuda()
 
--- model:forward(torch.rand(3, 48, 48, 128):cuda())
+
+local inp = torch.rand(3, 223, 223, 128):cuda()
+-- local o = inp
+-- for i=1,#(features.modules) do
+--    o = features.modules[i]:forward(o)
+--    print(#o)
+-- end
+model:forward(inp)

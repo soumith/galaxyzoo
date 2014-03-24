@@ -289,18 +289,20 @@ function jitter(s)
    if d[3] > 0.5 then
       s = image.rotate(s, math.pi * d[4])
    end
-   -- light translation (+-10px)
-   if d[5] > 0.5 then
-      s = image.translate(s, d[6] * 20 - 10, d[7] * 20 - 10)
-   end
+   -- crop a 223x223 random patch
+   local startX = math.ceil(d[6] * (loadSize[2] - sampleSize[2] - 1))
+   local startY = math.ceil(d[7] * (loadSize[3] - sampleSize[3] - 1))
+   local endX = startX + sampleSize[2]
+   local endY = startY + sampleSize[3]
+   s = image.crop(s, startX, startY, endX, endY)
    return s
 end
 function getSample()
    local i = math.floor(torch.uniform(1, nTraining+0.5))
    local filename = paths.concat(dataroot, tostring(trainData[i][1]) .. '.jpg')
    local im = gm.Image()
-   im:load(filename, sampleSize[2], sampleSize[3])
-   im:size(sampleSize[2], sampleSize[3])
+   im:load(filename, loadSize[2], loadSize[3])
+   im:size(loadSize[2], loadSize[3])
    im = im:toTensor('float', 'RGB', 'DHW', true)
    im = jitter(im)
    im:add(-meanImage)
@@ -358,14 +360,14 @@ local rtransposer = nn.Transpose({4,1},{4,2},{4,3})
       Total number: 2 * 4 * 2 * 8 = 128
    ]]--
 local function test_t(im, o)
-   o[1] = im
-   o[2] = image.translate(im, -10, 0)
-   o[3] = image.translate(im, 10, 0)
-   o[4] = image.translate(im, 0, -10)
-   o[5] = image.translate(im, 0, 10)
-   o[6] = image.translate(im, -10, -10)
-   o[7] = image.translate(im, 10, -10)
-   o[8] = image.translate(im, 10, 10)
+   o[1] = image.crop(im, 17, 17, 17+223, 17+223) -- center patch
+   o[2] = image.crop(im, 7, 17, 7+223, 17+223)
+   o[3] = image.crop(im, 27, 17, 27+223, 17+223)
+   o[4] = image.crop(im, 17, 7, 17+223, 7+223)
+   o[5] = image.crop(im, 17, 27, 17+223, 27+223)
+   o[6] = image.crop(im, 7, 7, 7+223, 7+223)
+   o[7] = image.crop(im, 27, 7, 27+223, 7+223)
+   o[8] = image.crop(im, 27, 27, 27+223, 27+223)
 end
 local function test_rt(im, o)
    -- rotate further 0
@@ -392,11 +394,13 @@ local function test_rrt(im, o)
 end
 function expandTestSample(im)
    -- produce the 128 combos, given an input image (3D tensor)
-   local o = torch.Tensor(128, im:size(1), im:size(2), im:size(3))
+   local o = torch.Tensor(128, sampleSize[1], sampleSize[2], sampleSize[3])
    -- original
    test_rrt(im, o[{{1,64},{},{},{}}])
    -- vflip
    test_rrt(image.vflip(im), o[{{65,128},{},{},{}}])
+   print(#o)
+   print(#meanImage)
    for i=1,o:size(1) do
       o[i]:add(-meanImage)
       -- o[i] = norm:forward(o[i])
@@ -407,8 +411,8 @@ end
 function getTest(i)
    local filename = paths.concat(dataroot, tostring(testData[i][1]) .. '.jpg')
    local im = gm.Image()
-   im:load(filename, sampleSize[2], sampleSize[3])
-   im:size(sampleSize[2], sampleSize[3])
+   im:load(filename, loadSize[2], loadSize[3])
+   im:size(loadSize[2], loadSize[3])
    im = im:toTensor('float', 'RGB', 'DHW', true)
    im = expandTestSample(im)
    im = im:cuda()
@@ -420,7 +424,7 @@ end
 
 -- sanity check of test variation generator
 if opt.dataTest then
-   local lena = expandTestSample(image.scale(image.lena(), 64, 64))
+   local lena = expandTestSample(image.scale(image.lena(), loadSize[2], loadSize[3]))
    image.display{image=rtransposer:forward(lena), nrow=32}
    image.display{image=rtransposer:forward(getTest(1):float()), nrow=32}
    local a,b = getBatch(128)
