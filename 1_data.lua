@@ -54,6 +54,24 @@ if not paths.filep('cache/data.t7') then
       data[i][37] = tonumber(csvdata['Class11.5'][i])
       data[i][38] = tonumber(csvdata['Class11.6'][i])
    end   
+   torch.save('cache/data.t7', data)
+   -- torch.save('cache/normalizedData.t7', normalizedData)
+   -- torch.save('cache/nTraining.t7', nTraining)
+   -- torch.save('cache/nTesting.t7', nTesting)
+   -- torch.save('cache/trainData.t7', trainData)
+   -- torch.save('cache/testData.t7', testData)
+   -- torch.save('cache/unnormalizedTestData.t7', unnormalizedTestData)
+else
+   print('Loading from cache')
+   data = torch.load('cache/data.t7')
+   nSamples = data:size(1)
+   -- normalizedData = torch.load('cache/normalizedData.t7')
+   -- nTraining = torch.load('cache/nTraining.t7')
+   -- nTesting  = torch.load('cache/nTesting.t7')
+   -- trainData = torch.load('cache/trainData.t7')
+   -- testData = torch.load('cache/testData.t7')
+   -- unnormalizedTestData = torch.load('cache/unnormalizedTestData.t7')
+end
    normalizedData = torch.Tensor(nSamples, 38)
    for i=1,nSamples do
       local input  = data[i]
@@ -63,7 +81,7 @@ if not paths.filep('cache/data.t7') then
       normalizedData[i] = output
    end
    -- split into training/testing 90/10
-   nTraining = math.floor(nSamples * 0.90)
+   nTraining = math.floor(nSamples * 0.9)
    nTesting = nSamples - nTraining
 
    local randIndices = torch.randperm(nSamples)
@@ -81,27 +99,12 @@ if not paths.filep('cache/data.t7') then
       testData[i] = normalizedData[tsIndices[i]]
       unnormalizedTestData[i] = data[tsIndices[i]]
    end
-   torch.save('cache/data.t7', data)
-   torch.save('cache/normalizedData.t7', normalizedData)
-   torch.save('cache/nTraining.t7', nTraining)
-   torch.save('cache/nTesting.t7', nTesting)
-   torch.save('cache/trainData.t7', trainData)
-   torch.save('cache/testData.t7', testData)
-   torch.save('cache/unnormalizedTestData.t7', unnormalizedTestData)
-else
-   print('Loading from cache')
-   data = torch.load('cache/data.t7')
-   normalizedData = torch.load('cache/normalizedData.t7')
-   nSamples = data:size(1)
-   nTraining = torch.load('cache/nTraining.t7')
-   nTesting  = torch.load('cache/nTesting.t7')
-   trainData = torch.load('cache/trainData.t7')
-   testData = torch.load('cache/testData.t7')
-   unnormalizedTestData = torch.load('cache/unnormalizedTestData.t7')
-end
+
+--=========
 print('Number of Samples: ' .. nSamples)
 print('Training samples: ' .. nTraining)
 print('Testing samples: ' .. nTesting)
+
 
 
 
@@ -133,8 +136,8 @@ function getSample()
    local im = gm.Image()
    im:load(filename, loadSize[2], loadSize[3])
    im:size(loadSize[2], loadSize[3])
-   im = im:toTensor('float', 'RGB', 'DHW', true)
    im = jitter(im)
+   im = im:toTensor('float', 'RGB', 'DHW', true)
    im:add(-meanImage)
    -- im = norm:forward(im)   
    local gt = trainData[i][{{2, 38}}]
@@ -210,27 +213,34 @@ end
 local function test_rrt(im, o)
    -- rotate 0
    test_rt(im, o[{{1,16},{},{},{}}])
-   -- rotate -90
-   local minus90 = torch.Tensor(im:size())
-   for i=1,3 do
-      minus90[i] = im[i]:t()
+   if not lightTesting then
+      -- rotate -90
+      local minus90 = torch.Tensor(im:size())
+      for i=1,3 do
+	 minus90[i] = im[i]:t()
+      end
+      test_rt(minus90, o[{{17,32},{},{},{}}])
+      -- rotate 90
+      local plus90 = image.hflip(image.vflip(minus90))
+      test_rt(plus90, o[{{33,48},{},{},{}}])
+      -- rotate 180
+      local plus180 = image.hflip(image.vflip(im))
+      test_rt(plus180, o[{{49,64},{},{},{}}])
    end
-   test_rt(minus90, o[{{17,32},{},{},{}}])
-   -- rotate 90
-   local plus90 = image.hflip(image.vflip(minus90))
-   test_rt(plus90, o[{{33,48},{},{},{}}])
-   -- rotate 180
-   local plus180 = image.hflip(image.vflip(im))
-   test_rt(plus180, o[{{49,64},{},{},{}}])
 end
 function expandTestSample(im)
-   sys.tic()
    -- produce the 128 combos, given an input image (3D tensor)
-   local o = torch.Tensor(128, sampleSize[1], sampleSize[2], sampleSize[3])
-   -- original
-   test_rrt(im, o[{{1,64},{},{},{}}])
-   -- vflip
-   test_rrt(image.vflip(im), o[{{65,128},{},{},{}}])
+   local o
+   if lightTesting then
+      o = torch.Tensor(16, sampleSize[1], sampleSize[2], sampleSize[3])
+      test_rrt(im, o[{{1,16},{},{},{}}])
+   else
+      o = torch.Tensor(128, sampleSize[1], sampleSize[2], sampleSize[3])
+      -- original
+      test_rrt(im, o[{{1,64},{},{},{}}])
+      -- vflip
+      test_rrt(image.vflip(im), o[{{65,128},{},{},{}}])
+   end
    for i=1,o:size(1) do
       o[i]:add(-meanImage)
       -- o[i] = norm:forward(o[i])
@@ -254,10 +264,10 @@ end
 -- sanity check of test variation generator
 if opt.dataTest then
    local lena = expandTestSample(image.scale(image.lena(), loadSize[2], loadSize[3]))
-   image.display{image=rtransposer:forward(lena), nrow=32}
-   image.display{image=rtransposer:forward(getTest(1):float()), nrow=32}
+   image.display{image=rtransposer:forward(lena), nrow=16}
+   image.display{image=rtransposer:forward(getTest(1):float()), nrow=16}
    local a,b = getBatch(128)
-   image.display{image=rtransposer:forward(getBatch(128):float()), nrow=32}
+   image.display{image=rtransposer:forward(a:float()), nrow=16}
    print(#a)
    print(#b)
 end

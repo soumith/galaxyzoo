@@ -163,21 +163,21 @@ function jitter(s)
    local d = torch.rand(7)
    -- vflip
    if d[1] > 0.5 then
-      s = image.vflip(s)
+      s:flip()
    end
    -- hflip
    if d[2] > 0.5 then
-      s = image.hflip(s)
+      s:flop()
    end
    -- rotation
    if d[3] > 0.5 then
-      s = image.rotate(s, math.pi * d[4])
+      s:rotate(360 * d[4])
    end
    -- crop a 223x223 random patch
    local startX = math.ceil(d[6] * (loadSize[2] - sampleSize[2] - 1))
    local startY = math.ceil(d[7] * (loadSize[3] - sampleSize[3] - 1))
    local endX = startX + sampleSize[2]
    local endY = startY + sampleSize[3]
-   s = image.crop(s, startX, startY, endX, endY)
+   s:crop(sampleSize[2], sampleSize[3], startX, startY)
    return s
 end

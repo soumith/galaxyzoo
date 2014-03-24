@@ -23,6 +23,7 @@ function test()
       -- test sample
       local input, target, targetU = getTest(t)
       local output = model:forward(input)
+      output = output:exp()
       output = output:mean(1)[1]:float()
       local outputU = normalizedToOriginal(output)
       local err = criterion:forward(output, target)

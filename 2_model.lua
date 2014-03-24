@@ -4,27 +4,27 @@ require 'nnx'
 require 'cunn'
 
 -- features size
-
-featuresOut = 1024
+fSize = {3, 96, 256, 128, 128, 128, 128}
+featuresOut = fSize[7]
 
 -- classifier size
-classifierHidden = {1024}
+classifierHidden = {256}
 dropout_p = 0.5
 
 features = nn.Sequential()
-features:add(nn.SpatialConvolutionCUDA(3, 96, 11, 11, 4, 4)) -- (223 - 11 + 4)/4 = 54
+features:add(nn.SpatialConvolutionCUDA(fSize[1], fSize[2], 11, 11, 4, 4)) -- (223 - 11 + 4)/4 = 54
 features:add(nn.Threshold(0,1e-6))
 features:add(nn.SpatialMaxPoolingCUDA(2,2,2,2)) -- 27
-features:add(nn.SpatialConvolutionCUDA(96, 256, 5, 5)) -- 23
+features:add(nn.SpatialConvolutionCUDA(fSize[2], fSize[3], 5, 5)) -- 23
 features:add(nn.Threshold(0,1e-6))
 features:add(nn.SpatialMaxPoolingCUDA(2,2,2,2)) -- 11
-features:add(nn.SpatialConvolutionCUDA(256, 512, 3, 3)) -- 9
+features:add(nn.SpatialConvolutionCUDA(fSize[3], fSize[4], 3, 3)) -- 9
 features:add(nn.Threshold(0,1e-6))
-features:add(nn.SpatialConvolutionCUDA(512, 1024, 3, 3)) -- 7
+features:add(nn.SpatialConvolutionCUDA(fSize[4], fSize[5], 3, 3)) -- 7
 features:add(nn.Threshold(0,1e-6))
-features:add(nn.SpatialConvolutionCUDA(1024, 1024, 3, 3)) -- 5
+features:add(nn.SpatialConvolutionCUDA(fSize[5], fSize[6], 3, 3)) -- 5
 features:add(nn.Threshold(0,1e-6))
-features:add(nn.SpatialConvolutionCUDA(1024, 1024, 3, 3)) -- 3
+features:add(nn.SpatialConvolutionCUDA(fSize[6], fSize[7], 3, 3)) -- 3
 features:add(nn.Threshold(0,1e-6))
 features:add(nn.SpatialMaxPoolingCUDA(2,2,2,2)) 
 features:add(nn.Transpose({4,1},{4,2},{4,3}))
