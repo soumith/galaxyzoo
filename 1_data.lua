@@ -1,6 +1,11 @@
 require 'csv'
 require 'xlua'
 require 'paths'
+require 'torchffi'
+require 'cutorch'
+require 'nn'
+require 'image'
+
 local gm = require 'graphicsmagick'
 
 print('==> Loading data')
@@ -248,6 +253,48 @@ for i=1,nTesting do
    unnormalizedTestData[i] = data[tsIndices[i]]
 end
 
+local meanImageFname = 'mean_' .. sampleSize[1] .. 'x' .. sampleSize[2] .. 'x' .. sampleSize[3] .. '.t7'
+if paths.filep(meanImageFname) then
+   print('Loading mean-image from cache')
+   meanImage = torch.load(meanImageFname)
+else
+   print('Calculating mean-image')
+   meanImage = torch.Tensor(sampleSize[1], sampleSize[2], sampleSize[3])
+   for i=1,nTraining do
+      xlua.progress(i, nTraining)
+      local filename = paths.concat(dataroot, tostring(trainData[i][1]) .. '.jpg')
+      local im = gm.Image()
+      im:load(filename, sampleSize[2], sampleSize[3])
+      im:size(sampleSize[2], sampleSize[3])
+      im = im:toTensor('float', 'RGB', 'DHW', true)
+      meanImage:add(im)
+   end
+   meanImage:div(nTraining)
+   torch.save(meanImageFname, meanImage)
+end
+
+local norm = nn.SpatialContrastiveNormalization(3, image.gaussian1D{size=13})
+
+function jitter(s)
+   local d = torch.rand(7)
+   -- vflip
+   if d[1] > 0.5 then
+      s = image.vflip(s)
+   end
+   -- hflip
+   if d[2] > 0.5 then
+      s = image.hflip(s)
+   end
+   -- rotation
+   if d[3] > 0.5 then
+      s = image.rotate(s, math.pi * d[4])
+   end
+   -- light translation (+-10px)
+   if d[5] > 0.5 then
+      s = image.translate(s, d[6] * 20 - 10, d[7] * 20 - 10)
+   end
+   return s
+end
 function getSample()
    local i = math.floor(torch.uniform(1, nTraining+0.5))
    local filename = paths.concat(dataroot, tostring(trainData[i][1]) .. '.jpg')
@@ -255,18 +302,106 @@ function getSample()
    im:load(filename, sampleSize[2], sampleSize[3])
    im:size(sampleSize[2], sampleSize[3])
    im = im:toTensor('float', 'RGB', 'DHW', true)
+   im = jitter(im)
+   im:add(-meanImage)
+   -- im = norm:forward(im)   
    local gt = trainData[i][{{2, 38}}]
    return im, gt
 end
 
 function getBatch(n)
    local img, gt
-   img = torch.Tensor(n, sampleSize[1], sampleSize[2], sampleSize[3])
+   img = torch.Tensor(sampleSize[1], sampleSize[2], sampleSize[3], n)
    gt = torch.Tensor(n, 37)
    for i=1,n do
-      img[i], gt[i] = getSample()
+      img[{{},{},{},i}], gt[i] = getSample()
    end
+   img = img:cuda()
+   gt = gt:cuda()
    return img, gt
+end
+
+local transposer = nn.Transpose({1,4},{1,3},{1,2})
+local rtransposer = nn.Transpose({4,1},{4,2},{4,3})
+   -- have 128 deterministic outputs for each input
+   --[[
+      original
+       - rotate   0
+       - rotate  90
+       - rotate -90
+       - rotate 180
+         - rotate further 0
+         - rotate further 45
+           - translate 0
+           - translate -10px (x)   0px (y)
+           - translate +10px (x)   0px (y)
+           - translate   0px (x) -10px (y)
+           - translate   0px (x) +10px (y)
+           - translate -10px (x) -10px (y)
+           - translate +10px (x) -10px (y)
+           - translate +10px (x) +10px (y)
+      vflip
+       - rotate   0
+       - rotate  90
+       - rotate -90
+       - rotate 180
+         - rotate further 0
+         - rotate further 45
+           - translate 0
+           - translate -10px (x)   0px (y)
+           - translate +10px (x)   0px (y)
+           - translate   0px (x) -10px (y)
+           - translate   0px (x) +10px (y)
+           - translate -10px (x) -10px (y)
+           - translate +10px (x) -10px (y)
+           - translate +10px (x) +10px (y)
+      Total number: 2 * 4 * 2 * 8 = 128
+   ]]--
+local function test_t(im, o)
+   o[1] = im
+   o[2] = image.translate(im, -10, 0)
+   o[3] = image.translate(im, 10, 0)
+   o[4] = image.translate(im, 0, -10)
+   o[5] = image.translate(im, 0, 10)
+   o[6] = image.translate(im, -10, -10)
+   o[7] = image.translate(im, 10, -10)
+   o[8] = image.translate(im, 10, 10)
+end
+local function test_rt(im, o)
+   -- rotate further 0
+   test_t(im, o[{{1,8},{},{},{}}])
+   -- rotate further 45
+   test_t(image.rotate(im, math.pi/4), o[{{9,16},{},{},{}}])
+end
+
+local function test_rrt(im, o)
+   -- rotate 0
+   test_rt(im, o[{{1,16},{},{},{}}])
+   -- rotate -90
+   local minus90 = torch.Tensor(im:size())
+   for i=1,3 do
+      minus90[i] = im[i]:t()
+   end
+   test_rt(minus90, o[{{17,32},{},{},{}}])
+   -- rotate 90
+   local plus90 = image.hflip(image.vflip(minus90))
+   test_rt(plus90, o[{{33,48},{},{},{}}])
+   -- rotate 180
+   local plus180 = image.hflip(image.vflip(im))
+   test_rt(plus180, o[{{49,64},{},{},{}}])
+end
+function expandTestSample(im)
+   -- produce the 128 combos, given an input image (3D tensor)
+   local o = torch.Tensor(128, im:size(1), im:size(2), im:size(3))
+   -- original
+   test_rrt(im, o[{{1,64},{},{},{}}])
+   -- vflip
+   test_rrt(image.vflip(im), o[{{65,128},{},{},{}}])
+   for i=1,o:size(1) do
+      o[i]:add(-meanImage)
+      -- o[i] = norm:forward(o[i])
+   end
+   return transposer:forward(o)
 end
 
 function getTest(i)
@@ -275,11 +410,22 @@ function getTest(i)
    im:load(filename, sampleSize[2], sampleSize[3])
    im:size(sampleSize[2], sampleSize[3])
    im = im:toTensor('float', 'RGB', 'DHW', true)
+   im = expandTestSample(im)
+   im = im:cuda()
    local gt = testData[i][{{2, 38}}]
-   local gtu = unnormalizedTestData[i][{{2,38}}]
+   local gtu = unnormalizedTestData[i][{{2,38}}]   
    return im, gt, gtu
 end
 
-a,b = getBatch(128)
-print(#a)
-print(#b)
+
+-- sanity check of test variation generator
+if opt.dataTest then
+   local lena = expandTestSample(image.scale(image.lena(), 64, 64))
+   image.display{image=rtransposer:forward(lena), nrow=32}
+   image.display{image=rtransposer:forward(getTest(1):float()), nrow=32}
+   local a,b = getBatch(128)
+   image.display{image=rtransposer:forward(getBatch(128):float()), nrow=32}
+   print(#a)
+   print(#b)
+end
+

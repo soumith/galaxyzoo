@@ -57,18 +57,17 @@ function train()
 	 -- f is the average of all criterions
 	 local f = 0
 
-	 -- evaluate function for complete mini batch
-	 for i = 1,inputs:size(1) do
-	    -- estimate f
-	    local output = model:forward(inputs[i])
-	    local err = criterion:forward(output, targets[i])
-	    f = f + err
-	    tMSE = tMSE + err
+	 -- evaluate function for complete mini batch	 
+	 -- estimate f
+	 local outputs = model:forward(inputs)
+	 outputs = outputs:exp() -- dumb but converting logsoftmax to softmax
+	 local errs = criterion:forward(outputs, targets)
+	 f = f + errs
+	 tMSE = tMSE + errs
 
-	    -- estimate df/dW
-	    local df_do = criterion:backward(output, targets[i])
-	    model:backward(inputs[i], df_do)
-	 end
+	 -- estimate df/dW
+	 local df_do = criterion:backward(outputs, targets)
+	 model:backward(inputs, df_do)	 
 
 	 -- normalize gradients and f(X)
 	 gradParameters:div(inputs:size(1))
