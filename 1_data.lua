@@ -203,7 +203,8 @@ local function test_rt(im, o)
    -- rotate further 0
    test_t(im, o[{{1,8},{},{},{}}])
    -- rotate further 45
-   test_t(image.rotate(im, math.pi/4), o[{{9,16},{},{},{}}])
+   local im2 =image.rotate(im, math.pi/4)   
+   test_t(im2, o[{{9,16},{},{},{}}])
 end
 
 local function test_rrt(im, o)
@@ -223,6 +224,7 @@ local function test_rrt(im, o)
    test_rt(plus180, o[{{49,64},{},{},{}}])
 end
 function expandTestSample(im)
+   sys.tic()
    -- produce the 128 combos, given an input image (3D tensor)
    local o = torch.Tensor(128, sampleSize[1], sampleSize[2], sampleSize[3])
    -- original
@@ -236,43 +238,18 @@ function expandTestSample(im)
    return transposer:forward(o)
 end
 
-function getTest(i, nocuda)
+function getTest(i)
    local filename = paths.concat(dataroot, tostring(testData[i][1]) .. '.jpg')
    local im = gm.Image()
    im:load(filename, loadSize[2], loadSize[3])
    im:size(loadSize[2], loadSize[3])
    im = im:toTensor('float', 'RGB', 'DHW', true)
    im = expandTestSample(im)
-   if not nocuda then
-      im = im:cuda()
-   end
-   local gt = testData[i][{{2, 38}}]
-   local gtu = unnormalizedTestData[i][{{2,38}}]   
-   return im, gt, gtu
-end
-
-if not paths.filep('cache/testImageCache.t7') then
-   print('Caching test jitters')
-   testImageDataCached = torch.Tensor(testData:size(1), sampleSize[1], sampleSize[2], sampleSize[3], 128)
-   for i=1,testData:size(1) do
-      xlua.progress(i, testData:size(1))
-      testImageDataCached[i] = getTest(i, true)
-   end
-   torch.save('cache/testImageCache.t7', testImageDataCached)
-else
-   print('Loading test jitters from cache')
-   testImageDataCached = torch.load('cache/testImageCache.t7')
-end
-
-function getTestCached(i)
-   local im = testImageDataCached[i]
    im = im:cuda()
    local gt = testData[i][{{2, 38}}]
    local gtu = unnormalizedTestData[i][{{2,38}}]   
    return im, gt, gtu
 end
-
-
 
 -- sanity check of test variation generator
 if opt.dataTest then
