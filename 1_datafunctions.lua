@@ -1,8 +1,18 @@
 function originalToNormalized(s)
+   local prune = false
+   if s:size(1) == 37 then
+      local t = torch.zeros(38)
+      t[{{2,38}}] = s
+      s = t
+      prune = true
+   end
    o = s:clone()
 
    -- class 1 (already normalized)
    local sum = s[2] + s[3] + s[4]
+   if math.abs(sum - 1.0) > 1e-4 then
+      print(s)
+   end
    assert(math.abs(sum - 1.0) <= 1e-4,  'Class1')
    
    -- class 2
@@ -98,6 +108,9 @@ function originalToNormalized(s)
       o[38] = s[38] / sum
    end
    assert(math.abs(sum - (s[30]+s[31]+s[32])) <= 1e-4,  'Class11')
+   if prune then
+      o = o[{{2,38}}]
+   end
    return o;
 end
 

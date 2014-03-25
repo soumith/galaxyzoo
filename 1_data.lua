@@ -91,8 +91,10 @@ end
    trainData = torch.Tensor(nTraining, 38)
    testData = torch.Tensor(nTesting, 38)
    unnormalizedTestData = torch.Tensor(nTesting, 38)
+   unnormalizedTrainData = torch.Tensor(nTraining, 38)
    for i=1,nTraining do
       trainData[i] = normalizedData[trIndices[i]]
+      unnormalizedTrainData[i] = data[trIndices[i]]
    end
 
    for i=1,nTesting do
@@ -141,19 +143,22 @@ function getSample()
    im:add(-meanImage)
    -- im = norm:forward(im)   
    local gt = trainData[i][{{2, 38}}]
-   return im, gt
+   local gtu = unnormalizedTrainData[i][{{2,38}}]
+   return im, gt, gtu
 end
 
 function getBatch(n)
-   local img, gt
+   local img, gt, gtu
    img = torch.Tensor(sampleSize[1], sampleSize[2], sampleSize[3], n)
    gt = torch.Tensor(n, 37)
+   gtu = torch.Tensor(n, 37)
    for i=1,n do
-      img[{{},{},{},i}], gt[i] = getSample()
+      img[{{},{},{},i}], gt[i], gtu[i] = getSample()
    end
    img = img:cuda()
-   gt = gt:cuda()
-   return img, gt
+   -- gt = gt:cuda()
+   -- gtu = gtu:cuda()
+   return img, gt, gtu
 end
 
 local transposer = nn.Transpose({1,4},{1,3},{1,2})
@@ -248,6 +253,7 @@ function expandTestSample(im)
    return transposer:forward(o)
 end
 
+collectgarbage()
 function getTest(i)
    local filename = paths.concat(dataroot, tostring(testData[i][1]) .. '.jpg')
    local im = gm.Image()

@@ -42,7 +42,7 @@ function train()
       if opt.progressBar then xlua.progress(t, epochSize) end
 
       -- create mini batch
-      local inputs, targets = getBatch(batchSize)
+      local inputs, _, targets = getBatch(batchSize)
 
       -- create closure to evaluate f(X) and df/dX
       local feval = function(x)
@@ -60,18 +60,24 @@ function train()
 	 -- evaluate function for complete mini batch	 
 	 -- estimate f
 	 local outputs = model:forward(inputs)
-	 outputs = outputs:exp() -- dumb but converting logsoftmax to softmax
+	 outputs = outputs:float()
+	 for kk = 1,outputs:size(1) do
+	    outputs[kk] = normalizedToOriginal(outputs[kk])
+	    originalToNormalized(outputs[kk]) -- to test assertions
+	 end
 	 local errs = criterion:forward(outputs, targets)
 	 f = f + errs
-	 tMSE = tMSE + errs
-
+	 -- sum individual RMSE
+	 for i=1,outputs:size(1) do
+	    tMSE = tMSE + math.sqrt((outputs[i]-targets[i]):pow(2):sum()/outputs:size(2))
+	 end
 	 -- estimate df/dW
 	 local df_do = criterion:backward(outputs, targets)
-	 model:backward(inputs, df_do)	 
+	 model:backward(inputs, df_do:cuda())
 
 	 -- normalize gradients and f(X)
-	 gradParameters:div(inputs:size(1))
-	 f = f/inputs:size(1)
+	 gradParameters:div(batchSize)
+	 f = f/batchSize
 
 	 -- return f and df/dX
 	 return f,gradParameters
@@ -86,9 +92,10 @@ function train()
    time = time / epochSize
    print("<trainer> time to learn 1 sample = " .. (time*1000) .. 'ms')
 
-   tMSE = tMSE / (epochSize)
-   local rMSE = math.sqrt(tMSE)
+   local rMSE = tMSE / (epochSize)
    print('epoch: ' .. epoch .. ' + rMSE (train set) : ', rMSE)
+   print('')
+   print('')
    trainLogger:add{['% rMSE (train set)'] = rMSE}
 
 end
