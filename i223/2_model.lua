@@ -6,11 +6,11 @@ require 'cunn'
 print '==> 2_model.lua'
 print '==> defining CNN model'
 -- features size
-fSize = {3, 96, 256, 128, 128, 128, 128}
+fSize = {3, 16, 16, 16, 16, 16, 16}
 featuresOut = fSize[7]
 
 -- classifier size
-classifierHidden = {256}
+classifierHidden = {32}
 dropout_p = 0.5
 
 features = nn.Sequential()
@@ -198,7 +198,7 @@ model = model:cuda()
 -- criterion = criterion:cuda()
 
 
-local inp = torch.rand(3, 223, 223, 128):cuda()
+local inp = torch.rand(sampleSize[1], sampleSize[2], sampleSize[3], 128):cuda()
 -- local o = inp
 -- for i=1,#(features.modules) do
 --    o = features.modules[i]:forward(o)

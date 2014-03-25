@@ -21,7 +21,7 @@ function test()
    for t = 1,nTesting do
       if opt.progressBar then xlua.progress(t, nTesting) end
       -- test sample
-      local input, target, targetU = getTest(t)
+      local input, _, target = getTest(t)
       local output = model:forward(input)
       output = output:mean(1)[1]:float()
       local output = normalizedToOriginal(output)
@@ -44,7 +44,10 @@ function test()
    print('<trainer> saving network to '..filename)
    print('')
    print('')
-   local weight_l1 = model.modules[1].modules[1].weight:transpose(4,3):transpose(3,2):transpose(2,1):float()
+   local weight_l1 = model.modules[1].modules[1].weight:float()
+   if bmode == 'DHWB' then
+      weight_l1 = weight_l1:transpose(4,3):transpose(3,2):transpose(2,1)
+   end
    local filters_l1 = {}
    for i=1,weight_l1:size(1) do
       for j=1,weight_l1:size(2) do

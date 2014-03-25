@@ -66,52 +66,40 @@ if not paths.filep('cache/data.t7') then
       data[i][38] = tonumber(csvdata['Class11.6'][i])
    end   
    torch.save('cache/data.t7', data)
-   -- torch.save('cache/normalizedData.t7', normalizedData)
-   -- torch.save('cache/nTraining.t7', nTraining)
-   -- torch.save('cache/nTesting.t7', nTesting)
-   -- torch.save('cache/trainData.t7', trainData)
-   -- torch.save('cache/testData.t7', testData)
-   -- torch.save('cache/unnormalizedTestData.t7', unnormalizedTestData)
 else
    print('Loading from cache')
    data = torch.load('cache/data.t7')
    nSamples = data:size(1)
-   -- normalizedData = torch.load('cache/normalizedData.t7')
-   -- nTraining = torch.load('cache/nTraining.t7')
-   -- nTesting  = torch.load('cache/nTesting.t7')
-   -- trainData = torch.load('cache/trainData.t7')
-   -- testData = torch.load('cache/testData.t7')
-   -- unnormalizedTestData = torch.load('cache/unnormalizedTestData.t7')
 end
-   normalizedData = torch.Tensor(nSamples, 38)
-   for i=1,nSamples do
-      local input  = data[i]
-      local output = originalToNormalized(input)
-      local inputSanity = normalizedToOriginal(output)
-      assert((input - inputSanity):abs():gt(1e-4):sum() == 0, 'Failed normalization sanity')
-      normalizedData[i] = output
-   end
-   -- split into training/testing 90/10
-   nTraining = math.floor(nSamples * 0.9)
-   nTesting = nSamples - nTraining
+normalizedData = torch.Tensor(nSamples, 38)
+for i=1,nSamples do
+   local input  = data[i]
+   local output = originalToNormalized(input)
+   local inputSanity = normalizedToOriginal(output)
+   assert((input - inputSanity):abs():gt(1e-4):sum() == 0, 'Failed normalization sanity')
+   normalizedData[i] = output
+end
+-- split into training/testing 90/10
+nTraining = math.floor(nSamples * 0.99)
+nTesting = nSamples - nTraining
 
-   local randIndices = torch.randperm(nSamples)
-   local trIndices = randIndices[{{1,nTraining}}]
-   local tsIndices = randIndices[{{nTraining+1,nSamples}}]
+local randIndices = torch.randperm(nSamples)
+local trIndices = randIndices[{{1,nTraining}}]
+local tsIndices = randIndices[{{nTraining+1,nSamples}}]
 
-   trainData = torch.Tensor(nTraining, 38)
-   testData = torch.Tensor(nTesting, 38)
-   unnormalizedTestData = torch.Tensor(nTesting, 38)
-   unnormalizedTrainData = torch.Tensor(nTraining, 38)
-   for i=1,nTraining do
-      trainData[i] = normalizedData[trIndices[i]]
-      unnormalizedTrainData[i] = data[trIndices[i]]
-   end
+trainData = torch.Tensor(nTraining, 38)
+testData = torch.Tensor(nTesting, 38)
+unnormalizedTestData = torch.Tensor(nTesting, 38)
+unnormalizedTrainData = torch.Tensor(nTraining, 38)
+for i=1,nTraining do
+   trainData[i] = normalizedData[trIndices[i]]
+   unnormalizedTrainData[i] = data[trIndices[i]]
+end
 
-   for i=1,nTesting do
-      testData[i] = normalizedData[tsIndices[i]]
-      unnormalizedTestData[i] = data[tsIndices[i]]
-   end
+for i=1,nTesting do
+   testData[i] = normalizedData[tsIndices[i]]
+   unnormalizedTestData[i] = data[tsIndices[i]]
+end
 
 --=========
 print('Number of Samples: ' .. nSamples)
@@ -160,11 +148,19 @@ end
 
 function getBatch(n)
    local img, gt, gtu
-   img = torch.Tensor(sampleSize[1], sampleSize[2], sampleSize[3], n)
+   if bmode == 'BDHW' then
+      img = torch.Tensor(n, sampleSize[1], sampleSize[2], sampleSize[3])
+   else      
+      img = torch.Tensor(sampleSize[1], sampleSize[2], sampleSize[3], n)
+   end
    gt = torch.Tensor(n, 37)
    gtu = torch.Tensor(n, 37)
    for i=1,n do
-      img[{{},{},{},i}], gt[i], gtu[i] = getSample()
+      if bmode == 'BDHW' then
+	 img[i], gt[i], gtu[i] = getSample()
+      else
+	 img[{{},{},{},i}], gt[i], gtu[i] = getSample()
+      end
    end
    img = img:cuda()
    -- gt = gt:cuda()
@@ -209,14 +205,17 @@ local rtransposer = nn.Transpose({4,1},{4,2},{4,3})
       Total number: 2 * 4 * 2 * 8 = 128
    ]]--
 local function test_t(im, o)
-   o[1] = image.crop(im, 17, 17, 17+223, 17+223) -- center patch
-   o[2] = image.crop(im, 7, 17, 7+223, 17+223)
-   o[3] = image.crop(im, 27, 17, 27+223, 17+223)
-   o[4] = image.crop(im, 17, 7, 17+223, 7+223)
-   o[5] = image.crop(im, 17, 27, 17+223, 27+223)
-   o[6] = image.crop(im, 7, 7, 7+223, 7+223)
-   o[7] = image.crop(im, 27, 7, 27+223, 7+223)
-   o[8] = image.crop(im, 27, 27, 27+223, 27+223)
+   local x1 = math.ceil((loadSize[2] - sampleSize[2])/2)
+   local size = sampleSize[2]
+   local t = math.floor(loadSize[2] * 0.04)
+   o[1] = image.crop(im, x1, x1, x1+size, x1+size) -- center patch
+   o[2] = image.crop(im, x1-t, x1, x1-t+size, x1+size)
+   o[3] = image.crop(im, x1+t, x1, x1+t+size, x1+size)
+   o[4] = image.crop(im, x1, x1-t, x1+size, x1-t+size)
+   o[5] = image.crop(im, x1, x1+t, x1+size, x1+t+size)
+   o[6] = image.crop(im, x1-t, x1-t, x1-t+size, x1-t+size)
+   o[7] = image.crop(im, x1+t, x1-t, x1+t+size, x1-t+size)
+   o[8] = image.crop(im, x1+t, x1+t, x1+t+size, x1+t+size)
 end
 local function test_rt(im, o)
    -- rotate further 0
@@ -261,7 +260,11 @@ function expandTestSample(im)
       o[i]:add(-meanImage)
       -- o[i] = norm:forward(o[i])
    end
-   return transposer:forward(o)
+   if bmode == 'BDHW' then
+      return o
+   else
+      return transposer:forward(o)
+   end
 end
 
 collectgarbage()

@@ -10,9 +10,7 @@ trainLogger = optim.Logger(paths.concat(opt.save, 'train.log'))
 
 if model then
    parameters,gradParameters = model:getParameters()
-   fParameters,fgradParameters = features:getParameters()
 end
-
 
 print '==> configuring optimizer'
 
@@ -81,7 +79,7 @@ function train()
 	 model:backward(inputs, df_do:cuda())
 	 -- normalize gradients and f(X)
 	 gradParameters:div(batchSize)
-	 fgradParameters:div(#branch)
+	 -- fgradParameters:mul(#branch)
 	 f = f/batchSize
 
 	 -- return f and df/dX
