@@ -55,26 +55,25 @@ function train()
 	 gradParameters:zero()
 
 	 -- f is the average of all criterions
-	 local f = 0
+	 local f = 0;
+	 local errs = torch.Tensor(batchSize)
 
 	 -- evaluate function for complete mini batch	 
 	 -- estimate f
 	 local outputs = model:forward(inputs)
 	 outputs = outputs:float()
-	 for kk = 1,outputs:size(1) do
-	    outputs[kk] = normalizedToOriginal(outputs[kk])
-	    originalToNormalized(outputs[kk]) -- to test assertions
+	 local df_do = torch.Tensor(outputs:size(1), outputs:size(2))
+	 for i=1,batchSize do
+	    outputs[i] = normalizedToOriginal(outputs[i])
+	    originalToNormalized(outputs[i]) -- to test assertions
+	    errs[i] = criterion:forward(outputs[i], targets[i])
+	    -- estimate df/dW
+	    df_do[i] = criterion:backward(outputs[i], targets[i])
+	    -- sum individual RMSE
+	    tMSE = tMSE + math.sqrt(errs[i])
+	    f = f + errs[i]
 	 end
-	 local errs = criterion:forward(outputs, targets)
-	 f = f + errs
-	 -- sum individual RMSE
-	 for i=1,outputs:size(1) do
-	    tMSE = tMSE + math.sqrt((outputs[i]-targets[i]):pow(2):sum()/outputs:size(2))
-	 end
-	 -- estimate df/dW
-	 local df_do = criterion:backward(outputs, targets)
 	 model:backward(inputs, df_do:cuda())
-
 	 -- normalize gradients and f(X)
 	 gradParameters:div(batchSize)
 	 f = f/batchSize
