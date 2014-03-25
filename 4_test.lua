@@ -3,7 +3,7 @@ require 'xlua'
 require 'optim'
 require 'image'
 
-print '==> 5_test.lua'
+print '==> 4_test.lua'
 print '==> defining test procedure'
 testLogger = optim.Logger(paths.concat(opt.save, 'test.log'))
 

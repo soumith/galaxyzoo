@@ -194,3 +194,17 @@ function jitter(s)
    s:crop(sampleSize[2], sampleSize[3], startX, startY)
    return s
 end
+
+function branchIndices(n)
+   if     n == 1  then return {{1,3}}
+   elseif n == 2  then return {{4,5}}
+   elseif n == 3  then return {{6,7}}
+   elseif n == 4  then return {{8,9}}
+   elseif n == 5  then return {{10,13}}
+   elseif n == 6  then return {{14,15}}
+   elseif n == 7  then return {{16,18}}
+   elseif n == 8  then return {{19,25}}
+   elseif n == 9  then return {{26,28}}
+   elseif n == 10 then return {{29,31}}
+   elseif n == 11 then return {{32,37}} end
+end

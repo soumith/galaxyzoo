@@ -3,6 +3,8 @@ require 'nn'
 require 'nnx'
 require 'cunn'
 
+print '==> 2_model.lua'
+print '==> defining CNN model'
 -- features size
 fSize = {3, 96, 256, 128, 128, 128, 128}
 featuresOut = fSize[7]
@@ -35,107 +37,152 @@ for i=1,22 do
    table.insert(dropouts, nn.Dropout(dropout_p))
 end
 
-branch1 = nn.Sequential()
-branch1:add(dropouts[1])
-branch1:add(nn.Linear(featuresOut, classifierHidden[1]))
-branch1:add(nn.Threshold(0, 1e-6))
-branch1:add(dropouts[2])
-branch1:add(nn.Linear(classifierHidden[1], 3))
-branch1:add(nn.SoftMax())
+branch = {}
+branch[1] = nn.Sequential()
+if opt.dropout then
+   branch[1]:add(dropouts[1])
+end
+branch[1]:add(nn.Linear(featuresOut, classifierHidden[1]))
+branch[1]:add(nn.Threshold(0, 1e-6))
+if opt.dropout then
+   branch[1]:add(dropouts[2])
+end
+branch[1]:add(nn.Linear(classifierHidden[1], 3))
+branch[1]:add(nn.SoftMax())
 
-branch2 = nn.Sequential()
-branch2:add(dropouts[3])
-branch2:add(nn.Linear(featuresOut, classifierHidden[1]))
-branch2:add(nn.Threshold(0, 1e-6))
-branch2:add(dropouts[4])
-branch2:add(nn.Linear(classifierHidden[1], 2))
-branch2:add(nn.SoftMax())
+branch[2] = nn.Sequential()
+if opt.dropout then
+   branch[2]:add(dropouts[3])
+end
+branch[2]:add(nn.Linear(featuresOut, classifierHidden[1]))
+branch[2]:add(nn.Threshold(0, 1e-6))
+if opt.dropout then
+   branch[2]:add(dropouts[4])
+end
+branch[2]:add(nn.Linear(classifierHidden[1], 2))
+branch[2]:add(nn.SoftMax())
 
-branch3 = nn.Sequential()
-branch3:add(dropouts[5])
-branch3:add(nn.Linear(featuresOut, classifierHidden[1]))
-branch3:add(nn.Threshold(0, 1e-6))
-branch3:add(dropouts[6])
-branch3:add(nn.Linear(classifierHidden[1], 2))
-branch3:add(nn.SoftMax())
+branch[3] = nn.Sequential()
+if opt.dropout then
+   branch[3]:add(dropouts[5])
+end
+branch[3]:add(nn.Linear(featuresOut, classifierHidden[1]))
+branch[3]:add(nn.Threshold(0, 1e-6))
+if opt.dropout then
+   branch[3]:add(dropouts[6])
+end
+branch[3]:add(nn.Linear(classifierHidden[1], 2))
+branch[3]:add(nn.SoftMax())
 
-branch4 = nn.Sequential()
-branch4:add(dropouts[7])
-branch4:add(nn.Linear(featuresOut, classifierHidden[1]))
-branch4:add(nn.Threshold(0, 1e-6))
-branch4:add(dropouts[8])
-branch4:add(nn.Linear(classifierHidden[1], 2))
-branch4:add(nn.SoftMax())
+branch[4] = nn.Sequential()
+if opt.dropout then
+   branch[4]:add(dropouts[7])
+end
+branch[4]:add(nn.Linear(featuresOut, classifierHidden[1]))
+branch[4]:add(nn.Threshold(0, 1e-6))
+if opt.dropout then
+   branch[4]:add(dropouts[8])
+end
+branch[4]:add(nn.Linear(classifierHidden[1], 2))
+branch[4]:add(nn.SoftMax())
 
-branch5 = nn.Sequential()
-branch5:add(dropouts[9])
-branch5:add(nn.Linear(featuresOut, classifierHidden[1]))
-branch5:add(nn.Threshold(0, 1e-6))
-branch5:add(dropouts[10])
-branch5:add(nn.Linear(classifierHidden[1], 4))
-branch5:add(nn.SoftMax())
+branch[5] = nn.Sequential()
+if opt.dropout then
+   branch[5]:add(dropouts[9])
+end
+branch[5]:add(nn.Linear(featuresOut, classifierHidden[1]))
+branch[5]:add(nn.Threshold(0, 1e-6))
+if opt.dropout then
+   branch[5]:add(dropouts[10])
+end
+branch[5]:add(nn.Linear(classifierHidden[1], 4))
+branch[5]:add(nn.SoftMax())
 
-branch6 = nn.Sequential()
-branch6:add(dropouts[11])
-branch6:add(nn.Linear(featuresOut, classifierHidden[1]))
-branch6:add(nn.Threshold(0, 1e-6))
-branch6:add(dropouts[12])
-branch6:add(nn.Linear(classifierHidden[1], 2))
-branch6:add(nn.SoftMax())
+branch[6] = nn.Sequential()
+if opt.dropout then
+   branch[6]:add(dropouts[11])
+end
+branch[6]:add(nn.Linear(featuresOut, classifierHidden[1]))
+branch[6]:add(nn.Threshold(0, 1e-6))
+if opt.dropout then
+   branch[6]:add(dropouts[12])
+end
+branch[6]:add(nn.Linear(classifierHidden[1], 2))
+branch[6]:add(nn.SoftMax())
 
-branch7 = nn.Sequential()
-branch7:add(dropouts[13])
-branch7:add(nn.Linear(featuresOut, classifierHidden[1]))
-branch7:add(nn.Threshold(0, 1e-6))
-branch7:add(dropouts[14])
-branch7:add(nn.Linear(classifierHidden[1], 3))
-branch7:add(nn.SoftMax())
+branch[7] = nn.Sequential()
+if opt.dropout then
+   branch[7]:add(dropouts[13])
+end
+branch[7]:add(nn.Linear(featuresOut, classifierHidden[1]))
+branch[7]:add(nn.Threshold(0, 1e-6))
+if opt.dropout then
+   branch[7]:add(dropouts[14])
+end
+branch[7]:add(nn.Linear(classifierHidden[1], 3))
+branch[7]:add(nn.SoftMax())
 
-branch8 = nn.Sequential()
-branch8:add(dropouts[15])
-branch8:add(nn.Linear(featuresOut, classifierHidden[1]))
-branch8:add(nn.Threshold(0, 1e-6))
-branch8:add(dropouts[16])
-branch8:add(nn.Linear(classifierHidden[1], 7))
-branch8:add(nn.SoftMax())
+branch[8] = nn.Sequential()
+if opt.dropout then
+   branch[8]:add(dropouts[15])
+end
+branch[8]:add(nn.Linear(featuresOut, classifierHidden[1]))
+branch[8]:add(nn.Threshold(0, 1e-6))
+if opt.dropout then
+   branch[8]:add(dropouts[16])
+end
+branch[8]:add(nn.Linear(classifierHidden[1], 7))
+branch[8]:add(nn.SoftMax())
 
-branch9 = nn.Sequential()
-branch9:add(dropouts[17])
-branch9:add(nn.Linear(featuresOut, classifierHidden[1]))
-branch9:add(nn.Threshold(0, 1e-6))
-branch9:add(dropouts[18])
-branch9:add(nn.Linear(classifierHidden[1], 3))
-branch9:add(nn.SoftMax())
+branch[9] = nn.Sequential()
+if opt.dropout then
+   branch[9]:add(dropouts[17])
+end
+branch[9]:add(nn.Linear(featuresOut, classifierHidden[1]))
+branch[9]:add(nn.Threshold(0, 1e-6))
+if opt.dropout then
+   branch[9]:add(dropouts[18])
+end
+branch[9]:add(nn.Linear(classifierHidden[1], 3))
+branch[9]:add(nn.SoftMax())
 
-branch10 = nn.Sequential()
-branch10:add(dropouts[19])
-branch10:add(nn.Linear(featuresOut, classifierHidden[1]))
-branch10:add(nn.Threshold(0, 1e-6))
-branch10:add(dropouts[20])
-branch10:add(nn.Linear(classifierHidden[1], 3))
-branch10:add(nn.SoftMax())
+branch[10] = nn.Sequential()
+if opt.dropout then
+   branch[10]:add(dropouts[19])
+end
+branch[10]:add(nn.Linear(featuresOut, classifierHidden[1]))
+branch[10]:add(nn.Threshold(0, 1e-6))
+if opt.dropout then
+   branch[10]:add(dropouts[20])
+end
+branch[10]:add(nn.Linear(classifierHidden[1], 3))
+branch[10]:add(nn.SoftMax())
 
-branch11 = nn.Sequential()
-branch11:add(dropouts[21])
-branch11:add(nn.Linear(featuresOut, classifierHidden[1]))
-branch11:add(nn.Threshold(0, 1e-6))
-branch11:add(dropouts[22])
-branch11:add(nn.Linear(classifierHidden[1], 6))
-branch11:add(nn.SoftMax())
+branch[11] = nn.Sequential()
+if opt.dropout then
+   branch[11]:add(dropouts[21])
+end
+branch[11]:add(nn.Linear(featuresOut, classifierHidden[1]))
+branch[11]:add(nn.Threshold(0, 1e-6))
+if opt.dropout then
+   branch[11]:add(dropouts[22])
+end
+branch[11]:add(nn.Linear(classifierHidden[1], 6))
+branch[11]:add(nn.SoftMax())
 
 
 dgraph = nn.Concat(2)
-dgraph:add(branch1)
-dgraph:add(branch2)
-dgraph:add(branch3)
-dgraph:add(branch4)
-dgraph:add(branch5)
-dgraph:add(branch6)
-dgraph:add(branch7)
-dgraph:add(branch8)
-dgraph:add(branch9)
-dgraph:add(branch10)
-dgraph:add(branch11)
+dgraph:add(branch[1])
+dgraph:add(branch[2])
+dgraph:add(branch[3])
+dgraph:add(branch[4])
+dgraph:add(branch[5])
+dgraph:add(branch[6])
+dgraph:add(branch[7])
+dgraph:add(branch[8])
+dgraph:add(branch[9])
+dgraph:add(branch[10])
+dgraph:add(branch[11])
 
 model = nn.Sequential()
 model:add(features)

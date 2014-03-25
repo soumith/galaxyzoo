@@ -3,13 +3,14 @@ require 'xlua'    -- xlua provides useful tools, like progress bars
 require 'optim'   -- an optimization package, for online and batch methods
 
 ----------------------------------------------------------------------
-print '==> 4_train.lua'
+print '==> 3_train.lua'
 print '==> defining some tools'
 
 trainLogger = optim.Logger(paths.concat(opt.save, 'train.log'))
 
 if model then
    parameters,gradParameters = model:getParameters()
+   fParameters,fgradParameters = features:getParameters()
 end
 
 
@@ -56,7 +57,6 @@ function train()
 
 	 -- f is the average of all criterions
 	 local f = 0;
-	 local errs = torch.Tensor(batchSize)
 
 	 -- evaluate function for complete mini batch	 
 	 -- estimate f
@@ -66,16 +66,22 @@ function train()
 	 for i=1,batchSize do
 	    outputs[i] = normalizedToOriginal(outputs[i])
 	    originalToNormalized(outputs[i]) -- to test assertions
-	    errs[i] = criterion:forward(outputs[i], targets[i])
-	    -- estimate df/dW
-	    df_do[i] = criterion:backward(outputs[i], targets[i])
+	    -- estimate MSE individually per branch
+	    for j=1,#branch do
+	       local ind = branchIndices(j)
+	       criterion:forward(outputs[i][ind], targets[i][ind])
+	       -- estimate df/dW
+	       df_do[i][ind] = criterion:backward(outputs[i][ind], targets[i][ind])
+	    end
+	    local err = criterion:forward(outputs[i], targets[i])
 	    -- sum individual RMSE
-	    tMSE = tMSE + math.sqrt(errs[i])
-	    f = f + errs[i]
+	    tMSE = tMSE + math.sqrt(err)
+	    f = f + err
 	 end
 	 model:backward(inputs, df_do:cuda())
 	 -- normalize gradients and f(X)
 	 gradParameters:div(batchSize)
+	 fgradParameters:div(#branch)
 	 f = f/batchSize
 
 	 -- return f and df/dX
