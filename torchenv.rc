@@ -1,2 +1,2 @@
-export PATH=/home/fatbox/local/bin:$PATH
-export LD_LIBRARY_PATH=/home/fatbox/local/lib:$LD_LIBRARY_PATH
+export PATH=~/local/bin:$PATH
+export LD_LIBRARY_PATH=~/local/lib:$LD_LIBRARY_PATH
