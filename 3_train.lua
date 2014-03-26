@@ -99,6 +99,6 @@ function train()
    print('epoch: ' .. epoch .. ' + rMSE (train set) : ', rMSE)
    print('')
    print('')
-   trainLogger:add{['% rMSE (train set)'] = rMSE}
+   trainLogger:add{['rMSE (train set)'] = rMSE}
 
 end

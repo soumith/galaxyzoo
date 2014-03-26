@@ -6,22 +6,29 @@ require 'cunn'
 print '==> 2_model.lua'
 print '==> defining CNN model'
 -- features size
-fSize = {3, 16, 16, 16}
-featuresOut = fSize[4]
+fSize = {3, 96, 256, 512, 512, 512, 512}
+featuresOut = fSize[7] * 6 * 6
 
 -- classifier size
-classifierHidden = {32}
+classifierHidden = {512}
 dropout_p = 0.5
 
 features = nn.Sequential()
-features:add(nn.SpatialConvolutionCUDA(fSize[1], fSize[2], 11, 11, 2, 2)) -- (111 - 11 + 2)/2 = 51
+features:add(nn.SpatialConvolutionCUDA(fSize[1], fSize[2], 11, 11, 1, 1)) -- (111 - 11 + 1)/1 = 101
 features:add(nn.Threshold(0,1e-6))
-features:add(nn.SpatialMaxPoolingCUDA(2,2,2,2)) -- 25
-features:add(nn.SpatialConvolutionCUDA(fSize[2], fSize[3], 5, 5)) -- 21
+features:add(nn.SpatialMaxPoolingCUDA(2,2,2,2)) -- 50
+features:add(nn.SpatialConvolutionCUDA(fSize[2], fSize[3], 9, 9)) -- 42
 features:add(nn.Threshold(0,1e-6))
-features:add(nn.SpatialMaxPoolingCUDA(2,2,2,2)) -- 10
-features:add(nn.SpatialConvolutionCUDA(fSize[3], fSize[4], 10, 10)) -- 1
+features:add(nn.SpatialMaxPoolingCUDA(2,2,2,2)) -- 21
+features:add(nn.SpatialConvolutionCUDA(fSize[3], fSize[4], 3, 3)) -- 19
 features:add(nn.Threshold(0,1e-6))
+features:add(nn.SpatialConvolutionCUDA(fSize[4], fSize[5], 3, 3)) -- 17
+features:add(nn.Threshold(0,1e-6))
+features:add(nn.SpatialConvolutionCUDA(fSize[5], fSize[6], 3, 3)) -- 15
+features:add(nn.Threshold(0,1e-6))
+features:add(nn.SpatialConvolutionCUDA(fSize[6], fSize[7], 3, 3)) -- 13
+features:add(nn.Threshold(0,1e-6))
+features:add(nn.SpatialMaxPoolingCUDA(2,2,2,2)) -- 6
 features:add(nn.Transpose({4,1},{4,2},{4,3}))
 features:add(nn.Reshape(featuresOut))
 

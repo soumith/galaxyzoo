@@ -36,7 +36,7 @@ function test()
    print("\n==> time to test 1 sample = " .. (time*1000) .. 'ms')
    
    print('epoch: ' .. epoch .. ' + RMSE (test set) : ' .. rMSE )
-   testLogger:add{['RMSE (test set)'] = rMSE}
+   testLogger:add{['rMSE (test set)'] = rMSE}
 
    -- save/log current net
    local filename = paths.concat(opt.save, 'model_' .. epoch .. '.net')
@@ -44,6 +44,7 @@ function test()
    print('<trainer> saving network to '..filename)
    print('')
    print('')
+   -- save L1 filters to image file, just for funsies
    local weight_l1 = model.modules[1].modules[1].weight:float()
    if bmode == 'DHWB' then
       weight_l1 = weight_l1:transpose(4,3):transpose(3,2):transpose(2,1)
@@ -58,5 +59,6 @@ function test()
 								 padding=3})
    image.save('results/l1color_' .. epoch .. '.jpg', image.toDisplayTensor{input=weight_l1,
 								 padding=3})
+   -- save network to disk finally
    torch.save(filename, model)
 end
