@@ -14,10 +14,10 @@ classifierHidden = {512}
 dropout_p = 0.5
 
 features = nn.Sequential()
-features:add(nn.SpatialConvolutionCUDA(fSize[1], fSize[2], 5, 5, 2, 2)) -- (111 - 5 + 2)/2 = 54
+features:add(nn.SpatialConvolutionCUDA(fSize[1], fSize[2], 9, 9, 2, 2)) -- (111 - 9 + 2)/2 = 52
 features:add(nn.Threshold(0,1e-6))
-features:add(nn.SpatialMaxPoolingCUDA(2,2,2,2)) -- 27
-features:add(nn.SpatialConvolutionCUDA(fSize[2], fSize[3], 6, 6)) -- 22
+features:add(nn.SpatialMaxPoolingCUDA(2,2,2,2)) -- 26
+features:add(nn.SpatialConvolutionCUDA(fSize[2], fSize[3], 5, 5)) -- 22
 features:add(nn.Threshold(0,1e-6))
 features:add(nn.SpatialMaxPoolingCUDA(2,2,2,2)) -- 11
 features:add(nn.SpatialConvolutionCUDA(fSize[3], fSize[4], 4, 4)) -- 8
