@@ -106,31 +106,6 @@ print('Number of Samples: ' .. nSamples)
 print('Training samples: ' .. nTraining)
 print('Testing samples: ' .. nTesting)
 
-
-
-
-local meanImageFname = 'mean_' .. sampleSize[1] .. 'x' .. sampleSize[2] .. 'x' .. sampleSize[3] .. '.t7'
-if paths.filep(meanImageFname) then
-   print('Loading mean-image from cache')
-   meanImage = torch.load(meanImageFname)
-else
-   print('Calculating mean-image')
-   meanImage = torch.Tensor(sampleSize[1], sampleSize[2], sampleSize[3])
-   for i=1,nTraining do
-      xlua.progress(i, nTraining)
-      local filename = paths.concat(dataroot, tostring(trainData[i][1]) .. '.jpg')
-      local im = gm.Image()
-      im:load(filename, sampleSize[2], sampleSize[3])
-      im:size(sampleSize[2], sampleSize[3])
-      im = im:toTensor('float', 'RGB', 'DHW', true)
-      meanImage:add(im)
-   end
-   meanImage:div(nTraining)
-   torch.save(meanImageFname, meanImage)
-end
-
-local norm = nn.SpatialContrastiveNormalization(3, image.gaussian1D{size=13})
-
 function getSample()
    local i = math.floor(torch.uniform(1, nTraining+0.5))
    local filename = paths.concat(dataroot, tostring(trainData[i][1]) .. '.jpg')
@@ -138,9 +113,9 @@ function getSample()
    im:load(filename, loadSize[2], loadSize[3])
    im:size(loadSize[2], loadSize[3])
    im = jitter(im)
-   im = im:toTensor('float', 'RGB', 'DHW', true)
-   im:add(-meanImage)
-   -- im = norm:forward(im)   
+   im = im:toTensor('float', 'RGB', 'DHW', true)   
+   im:add(-im:mean())
+   im:div(im:std())
    local gt = trainData[i][{{2, 38}}]
    local gtu = unnormalizedTrainData[i][{{2,38}}]
    return im, gt, gtu
@@ -257,8 +232,8 @@ function expandTestSample(im)
       test_rrt(image.vflip(im), o[{{65,128},{},{},{}}])
    end
    for i=1,o:size(1) do
-      o[i]:add(-meanImage)
-      -- o[i] = norm:forward(o[i])
+      o[i]:add(-o[i]:mean())
+      o[i]:div(o[i]:std())
    end
    if bmode == 'BDHW' then
       return o
@@ -285,7 +260,9 @@ end
 if opt.dataTest then
    local lena = expandTestSample(image.scale(image.lena(), loadSize[2], loadSize[3]))
    image.display{image=rtransposer:forward(lena), nrow=16}
-   image.display{image=rtransposer:forward(getTest(1):float()), nrow=16}
+   local testImage = rtransposer:forward(getTest(1):float())
+   image.display{image=testImage[1], legend='original-image after mean'}
+   image.display{image=testImage, nrow=16}
    local a,b = getBatch(128)
    image.display{image=rtransposer:forward(a:float()), nrow=16}
    print(#a)
