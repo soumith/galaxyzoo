@@ -190,14 +190,14 @@ model:add(dgraph)
 criterion = nn.MSECriterion()
 
 
-model = model:cuda()
+-- model = model:cuda()
 -- criterion = criterion:cuda()
 
 
-local inp = torch.rand(sampleSize[1], sampleSize[2], sampleSize[3], 128):cuda()
+-- local inp = torch.rand(sampleSize[1], sampleSize[2], sampleSize[3], 128):cuda()
 -- local o = inp
 -- for i=1,#(features.modules) do
 --    o = features.modules[i]:forward(o)
 --    print(#o)
 -- end
-model:forward(inp)
+-- model:forward(inp)
