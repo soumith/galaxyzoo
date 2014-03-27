@@ -9,13 +9,15 @@ print '==> defining some tools'
 trainLogger = optim.Logger(paths.concat(opt.save, 'train.log'))
 
 if model then
-   parameters,gradParameters = model:getParameters()
    if opt.retrain ~= "none" then
-      local mod2 = torch.load(opt.retrain)
+      local parameters,gradParameters = model:getParameters()
+      local mod2 = torch.load(opt.retrain):float()
       local p2,gp2 = mod2:getParameters()
       parameters:copy(p2)
       gradParameters:copy(gp2)
    end
+   model:cuda()
+   parameters,gradParameters = model:getParameters()
    collectgarbage()
 end
 
