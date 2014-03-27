@@ -2,7 +2,10 @@
 currdir=`dirname $0`
 cd $currdir
 
-cd data/images_training_rev1
+cd data
+unzip images_training_rev1.zip
+
+cd images_training_rev1
 mkdir ../images_training_rev1_128/
 
 find . -name *.jpg | xargs -I {} echo "convert {} -resize 128x128 ../images_training_rev1_128/{}" >commands.txt
