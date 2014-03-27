@@ -6,8 +6,8 @@ cd data
 unzip images_training_rev1.zip
 
 cd images_training_rev1
-mkdir ../images_training_rev1_128/
+mkdir -p ../images_training_rev1_12/
 
-find . -name *.jpg | xargs -I {} echo "convert {} -resize 128x128 ../images_training_rev1_128/{}" >commands.txt
+find "." -name "*.jpg" | xargs -I {} echo "convert {} -resize 12x12 ../images_training_rev1_12/{}" >commands.txt
 cat commands.txt|parallel
 rm -f commands.txt
