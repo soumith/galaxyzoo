@@ -10,6 +10,13 @@ trainLogger = optim.Logger(paths.concat(opt.save, 'train.log'))
 
 if model then
    parameters,gradParameters = model:getParameters()
+   if opt.retrain ~= "none" then
+      local mod2 = torch.load(opt.retrain)
+      local p2,gp2 = mod2:getParameters()
+      parameters:copy(p2)
+      gradParameters:copy(gp2)
+   end
+   collectgarbage()
 end
 
 print '==> configuring optimizer'
