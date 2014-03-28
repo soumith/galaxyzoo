@@ -21,3 +21,5 @@ luarocks install env
 
 luarocks install graphicsmagick
 
+apt-get install libgraphicsmagick-dev
+
