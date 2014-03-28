@@ -17,3 +17,7 @@ luarocks install nnx
 
 luarocks install torchffi
 
+luarocks install env
+
+luarocks install graphicsmagick
+
