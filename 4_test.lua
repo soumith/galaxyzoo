@@ -21,7 +21,8 @@ function test()
    for t = 1,nTesting do
       if opt.progressBar then xlua.progress(t, nTesting) end
       -- test sample
-      local input, _, target = getTest(t)
+      local input, _, target = getTest(t, lightTesting)
+      input = input:cuda()
       local output = model:forward(input)
       output = output:mean(1)[1]:float()
       local output = normalizedToOriginal(output)

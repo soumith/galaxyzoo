@@ -42,7 +42,6 @@ archdesc = '-580'
 lightTesting = true
 
 epochSize = opt.batchSize * 1000
-os.execute('mkdir -p cache')
 
 dofile('1_data.lua')
 if not opt.dataTest then

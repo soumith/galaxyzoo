@@ -51,6 +51,7 @@ function train()
 
       -- create mini batch
       local inputs, _, targets = getBatch(batchSize)
+      inputs = inputs:cuda()
 
       -- create closure to evaluate f(X) and df/dX
       local feval = function(x)

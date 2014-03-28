@@ -2,11 +2,10 @@ require 'csv'
 require 'xlua'
 require 'paths'
 require 'torchffi'
-require 'cutorch'
 require 'nn'
 require 'image'
-local gm = require 'graphicsmagick'
 
+os.execute('mkdir -p cache')
 dofile('1_datafunctions.lua')
 print '==> 1_data.lua'
 print('==> Loading data')
@@ -80,7 +79,7 @@ for i=1,nSamples do
    normalizedData[i] = output
 end
 -- split into training/testing 90/10
-nTraining = math.floor(nSamples * 0.99)
+nTraining = math.floor(nSamples * 0.90)
 nTesting = nSamples - nTraining
 
 local randIndices = torch.randperm(nSamples)
@@ -109,11 +108,8 @@ print('Testing samples: ' .. nTesting)
 function getSample()
    local i = math.floor(torch.uniform(1, nTraining+0.5))
    local filename = paths.concat(dataroot, tostring(trainData[i][1]) .. '.jpg')
-   local im = gm.Image()
-   im:load(filename, loadSize[2], loadSize[3])
-   im:size(loadSize[2], loadSize[3])
+   local im = image.load(filename, 3)
    im = jitter(im)
-   im = im:toTensor('float', 'RGB', 'DHW', true)   
    im:add(-im:mean())
    im:div(im:std())
    local gt = trainData[i][{{2, 38}}]
@@ -137,9 +133,6 @@ function getBatch(n)
 	 img[{{},{},{},i}], gt[i], gtu[i] = getSample()
       end
    end
-   img = img:cuda()
-   -- gt = gt:cuda()
-   -- gtu = gtu:cuda()
    return img, gt, gtu
 end
 
@@ -200,7 +193,7 @@ local function test_rt(im, o)
    test_t(im2, o[{{9,16},{},{},{}}])
 end
 
-local function test_rrt(im, o)
+local function test_rrt(im, o, lightTesting)
    -- rotate 0
    test_rt(im, o[{{1,16},{},{},{}}])
    if not lightTesting then
@@ -218,18 +211,18 @@ local function test_rrt(im, o)
       test_rt(plus180, o[{{49,64},{},{},{}}])
    end
 end
-function expandTestSample(im)
+function expandTestSample(im, lightTesting)
    -- produce the 128 combos, given an input image (3D tensor)
    local o
    if lightTesting then
       o = torch.Tensor(16, sampleSize[1], sampleSize[2], sampleSize[3])
-      test_rrt(im, o[{{1,16},{},{},{}}])
+      test_rrt(im, o[{{1,16},{},{},{}}], lightTesting)
    else
       o = torch.Tensor(128, sampleSize[1], sampleSize[2], sampleSize[3])
       -- original
-      test_rrt(im, o[{{1,64},{},{},{}}])
+      test_rrt(im, o[{{1,64},{},{},{}}], lightTesting)
       -- vflip
-      test_rrt(image.vflip(im), o[{{65,128},{},{},{}}])
+      test_rrt(image.vflip(im), o[{{65,128},{},{},{}}], lightTesting)
    end
    for i=1,o:size(1) do
       o[i]:add(-o[i]:mean())
@@ -243,21 +236,17 @@ function expandTestSample(im)
 end
 
 collectgarbage()
-function getTest(i)
+function getTest(i, lightTesting)
    local filename = paths.concat(dataroot, tostring(testData[i][1]) .. '.jpg')
-   local im = gm.Image()
-   im:load(filename, loadSize[2], loadSize[3])
-   im:size(loadSize[2], loadSize[3])
-   im = im:toTensor('float', 'RGB', 'DHW', true)
-   im = expandTestSample(im)
-   im = im:cuda()
+   local im = image.load(filename, 3)
+   im = expandTestSample(im, lightTesting)
    local gt = testData[i][{{2, 38}}]
    local gtu = unnormalizedTestData[i][{{2,38}}]   
    return im, gt, gtu
 end
 
 -- sanity check of test variation generator
-if opt.dataTest then
+if opt and opt.dataTest then
    local lena = expandTestSample(image.scale(image.lena(), loadSize[2], loadSize[3]))
    image.display{image=rtransposer:forward(lena), nrow=16}
    local testImage = rtransposer:forward(getTest(1):float())

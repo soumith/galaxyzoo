@@ -1,3 +1,5 @@
+require 'image'
+
 function originalToNormalized(s)
    local prune = false
    if s:size(1) == 37 then
@@ -176,22 +178,22 @@ function jitter(s)
    local d = torch.rand(7)
    -- vflip
    if d[1] > 0.5 then
-      s:flip()
+      s = image.vflip(s)
    end
    -- hflip
    if d[2] > 0.5 then
-      s:flop()
+      s = image.hflip(s)
    end
    -- rotation
    if d[3] > 0.5 then
-      s:rotate(360 * d[4])
+      s = image.rotate(s, math.pi * d[4])
    end
    -- crop a sampleSize[2]xsampleSize[3] random patch
    local startX = math.ceil(d[6] * (loadSize[2] - sampleSize[2] - 1))
    local startY = math.ceil(d[7] * (loadSize[3] - sampleSize[3] - 1))
    local endX = startX + sampleSize[2]
    local endY = startY + sampleSize[3]
-   s:crop(sampleSize[2], sampleSize[3], startX, startY)
+   s = image.crop(s, startX, startY, endX, endY)
    return s
 end
 
