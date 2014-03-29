@@ -28,9 +28,9 @@ function test()
       local output = normalizedToOriginal(output)
       originalToNormalized(output) -- to test assertions
       local err = criterion:forward(output, target)
-      tMSE = tMSE + math.sqrt(err)
+      tMSE = tMSE + err
    end
-   local rMSE = tMSE / nTesting
+   local rMSE = math.sqrt(tMSE / nTesting)
    -- timing
    time = sys.clock() - time
    time = time / nTesting

@@ -83,7 +83,7 @@ function train()
 	    end
 	    local err = criterion:forward(outputs[i], targets[i])
 	    -- sum individual RMSE
-	    tMSE = tMSE + math.sqrt(err)
+	    tMSE = tMSE + err
 	    f = f + err
 	 end
 	 model:backward(inputs, df_do:cuda())
@@ -105,7 +105,7 @@ function train()
    time = time / epochSize
    print("<trainer> time to learn 1 sample = " .. (time*1000) .. 'ms')
 
-   local rMSE = tMSE / (epochSize)
+   local rMSE = math.sqrt(tMSE / (epochSize))
    print('epoch: ' .. epoch .. ' + rMSE (train set) : ', rMSE)
    print('')
    print('')
