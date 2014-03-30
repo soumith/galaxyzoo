@@ -99,7 +99,7 @@ for i=1,nTesting do
    testData[i] = normalizedData[tsIndices[i]]
    unnormalizedTestData[i] = data[tsIndices[i]]
 end
-
+collectgarbage()
 --=========
 print('Number of Samples: ' .. nSamples)
 print('Training samples: ' .. nTraining)
@@ -136,106 +136,6 @@ function getBatch(n)
    return img, gt, gtu
 end
 
-local transposer = nn.Transpose({1,4},{1,3},{1,2})
-local rtransposer = nn.Transpose({4,1},{4,2},{4,3})
-   -- have 128 deterministic outputs for each input
-   --[[
-      original
-       - rotate   0
-       - rotate  90
-       - rotate -90
-       - rotate 180
-         - rotate further 0
-         - rotate further 45
-           - translate 0
-           - translate -10px (x)   0px (y)
-           - translate +10px (x)   0px (y)
-           - translate   0px (x) -10px (y)
-           - translate   0px (x) +10px (y)
-           - translate -10px (x) -10px (y)
-           - translate +10px (x) -10px (y)
-           - translate +10px (x) +10px (y)
-      vflip
-       - rotate   0
-       - rotate  90
-       - rotate -90
-       - rotate 180
-         - rotate further 0
-         - rotate further 45
-           - translate 0
-           - translate -10px (x)   0px (y)
-           - translate +10px (x)   0px (y)
-           - translate   0px (x) -10px (y)
-           - translate   0px (x) +10px (y)
-           - translate -10px (x) -10px (y)
-           - translate +10px (x) -10px (y)
-           - translate +10px (x) +10px (y)
-      Total number: 2 * 4 * 2 * 8 = 128
-   ]]--
-local function test_t(im, o)
-   local x1 = math.ceil((loadSize[2] - sampleSize[2])/2)
-   local size = sampleSize[2]
-   local t = math.floor(loadSize[2] * 0.04)
-   o[1] = image.crop(im, x1, x1, x1+size, x1+size) -- center patch
-   o[2] = image.crop(im, x1-t, x1, x1-t+size, x1+size)
-   o[3] = image.crop(im, x1+t, x1, x1+t+size, x1+size)
-   o[4] = image.crop(im, x1, x1-t, x1+size, x1-t+size)
-   o[5] = image.crop(im, x1, x1+t, x1+size, x1+t+size)
-   o[6] = image.crop(im, x1-t, x1-t, x1-t+size, x1-t+size)
-   o[7] = image.crop(im, x1+t, x1-t, x1+t+size, x1-t+size)
-   o[8] = image.crop(im, x1+t, x1+t, x1+t+size, x1+t+size)
-end
-local function test_rt(im, o)
-   -- rotate further 0
-   test_t(im, o[{{1,8},{},{},{}}])
-   -- rotate further 45
-   local im2 =image.rotate(im, math.pi/4)   
-   test_t(im2, o[{{9,16},{},{},{}}])
-end
-
-local function test_rrt(im, o, lightTesting)
-   -- rotate 0
-   test_rt(im, o[{{1,16},{},{},{}}])
-   if not lightTesting then
-      -- rotate -90
-      local minus90 = torch.Tensor(im:size())
-      for i=1,3 do
-	 minus90[i] = im[i]:t()
-      end
-      test_rt(minus90, o[{{17,32},{},{},{}}])
-      -- rotate 90
-      local plus90 = image.hflip(image.vflip(minus90))
-      test_rt(plus90, o[{{33,48},{},{},{}}])
-      -- rotate 180
-      local plus180 = image.hflip(image.vflip(im))
-      test_rt(plus180, o[{{49,64},{},{},{}}])
-   end
-end
-function expandTestSample(im, lightTesting)
-   -- produce the 128 combos, given an input image (3D tensor)
-   local o
-   if lightTesting then
-      o = torch.Tensor(16, sampleSize[1], sampleSize[2], sampleSize[3])
-      test_rrt(im, o[{{1,16},{},{},{}}], lightTesting)
-   else
-      o = torch.Tensor(128, sampleSize[1], sampleSize[2], sampleSize[3])
-      -- original
-      test_rrt(im, o[{{1,64},{},{},{}}], lightTesting)
-      -- vflip
-      test_rrt(image.vflip(im), o[{{65,128},{},{},{}}], lightTesting)
-   end
-   for i=1,o:size(1) do
-      o[i]:add(-o[i]:mean())
-      o[i]:div(o[i]:std())
-   end
-   if bmode == 'BDHW' then
-      return o
-   else
-      return transposer:forward(o)
-   end
-end
-
-collectgarbage()
 function getTest(i, lightTesting)
    local filename = paths.concat(dataroot, tostring(testData[i][1]) .. '.jpg')
    local im = image.load(filename, 3)
