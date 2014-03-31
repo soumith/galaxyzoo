@@ -176,7 +176,7 @@ function normalizedToOriginal(s)
 end
 
 function jitter(s)
-   local d = torch.rand(7)
+   local d = torch.rand(10)
    -- vflip
    if d[1] > 0.5 then
       s = image.vflip(s)
@@ -189,12 +189,25 @@ function jitter(s)
    if d[3] > 0.5 then
       s = image.rotate(s, math.pi * d[4])
    end
-   -- crop a sampleSize[2]xsampleSize[3] random patch
-   local startX = math.ceil(d[6] * (loadSize[2] - sampleSize[2] - 1))
-   local startY = math.ceil(d[7] * (loadSize[3] - sampleSize[3] - 1))
-   local endX = startX + sampleSize[2]
-   local endY = startY + sampleSize[3]
-   s = image.crop(s, startX, startY, endX, endY)
+   -- crop a 0.9 to 1.1 sized random patch and resize it to 128
+   if d[5] > 0.5 then
+      local scalef = torch.uniform(0.9, 1.1) 
+      local size = {3, sampleSize[2] * scalef, sampleSize[3] * scalef}
+      local startX = math.ceil(d[6] * (loadSize[2] - size[2] - 1))
+      local startY = math.ceil(d[7] * (loadSize[3] - size[3] - 1))
+      local endX = startX + size[2]
+      local endY = startY + size[3]
+      s = image.crop(s, startX, startY, endX, endY)
+      -- now rescale it to sampleSize
+      s = image.scale(s, sampleSize[2], sampleSize[3])
+   else
+      -- crop a sampleSize[2]xsampleSize[3] random patch
+      local startX = math.ceil(d[6] * (loadSize[2] - sampleSize[2] - 1))
+      local startY = math.ceil(d[7] * (loadSize[3] - sampleSize[3] - 1))
+      local endX = startX + sampleSize[2]
+      local endY = startY + sampleSize[3]
+      s = image.crop(s, startX, startY, endX, endY)
+   end
    return s
 end
 
