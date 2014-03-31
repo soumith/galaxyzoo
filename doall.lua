@@ -4,7 +4,7 @@ require 'cutorch'
 torch.setdefaulttensortype('torch.FloatTensor')
 cmd = torch.CmdLine()
 cmd:text()
-cmd:text('GalaxyZoo Training sript')
+cmd:text('GalaxyZoo Training script')
 cmd:text()
 cmd:text('Options:')
 cmd:option('-seed',            1,           'fixed input seed for repeatable experiments')
@@ -29,7 +29,7 @@ torch.manualSeed(opt.seed)
 cutorch.setDevice(opt.gpuid)
 
 
-bmode = 'DHWB' -- 'BDHW' -- or 
+bmode = 'DHWB' --  -- depth x height x width x batch
 
 -- loadSize   = {3, 256, 256}
 -- sampleSize = {3, 223, 223}

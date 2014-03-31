@@ -13,41 +13,41 @@ cmd:text('Options:')
 cmd:option('-input', 'testresults', 'folder pointing to where all the test outputs are')
 cmd:option('-save', 'kagglesubmissions',   'subdirectory to save results in')
 cmd:option('-model', 'none', 'path to model')
-cmd:option('-data', 'data/test', 'root dir of test images')
 cmd:text()
 opt = cmd:parse(arg or {})
 
-os.execute('mkdir -p' .. opt.save)
+os.execute('mkdir -p ' .. opt.save)
 
 local dirs = {}
 for f in paths.files(opt.input) do
-   local f = paths.concat(opt.input, f)
-   if paths.dirp(f) and f ~= '.' and f ~= '..' then
-      table.insert(dirs, f)      
+   local bf = paths.concat(opt.input, f)
+   if paths.dirp(bf) and f ~= '.' and f ~= '..' then
+      table.insert(dirs, bf)      
    end
 end
 
 nSamples = 79975
-local out = (nSamples, 38)
+local out = torch.Tensor(nSamples, 38)
 
 local index = 1
 -- for each file in first folder,
 for f in paths.files(dirs[1]) do
-   print(f)
-   local o = torch.Tensor(#dirs * 128, 38)
-   o[{{}, {1}}] = tonumber(f)
-   for i=1,#dirs do
-      -- load the same filename from all folders
-      local ot = torch.load(paths.concat(dirs[i], f))
-      local startidx = (i-1)*128 + 1
-      -- join the tensors
-      o[{{startidx, startidx+128},{2, 38}}] = ot
+   if not paths.dirp(paths.concat(dirs[1], f)) then 
+      local o = torch.Tensor(#dirs * 128, 38)
+      o[{{}, {1}}]:fill(tonumber(f))
+      for i=1,#dirs do
+	 -- load the same filename from all folders
+	 local ot = torch.load(paths.concat(dirs[i], f))
+	 local startidx = (i-1)*128 + 1
+	 -- join the tensors
+	 o[{{startidx, startidx+127},{2, 38}}] = ot
+      end
+      -- average the tensors
+      o = o:mean(1)[1]
+      assert(tostring(o[1]) == f, 'file name got corrupted')
+      out[index] = o
+      index = index + 1
    end
-   -- average the tensors
-   o = o:mean(1)[1]
-   assert(tostring(o[1]) == f, 'file name got corrupted')
-   out[index] = o
-   index = index + 1
 end
 
 local csd = {}
@@ -92,7 +92,7 @@ csd['Class11.6'] = {}
 
 
 for i=1,nSamples do
-   table.insert(csd['GalaxyID'], out[i][1]) 
+   table.insert(csd['GalaxyID'], out[i][1])
    table.insert(csd['Class1.1'], out[i][2]) 
    table.insert(csd['Class1.2'], out[i][3]) 
    table.insert(csd['Class1.3'], out[i][4]) 
@@ -132,4 +132,5 @@ for i=1,nSamples do
    table.insert(csd['Class11.6'], out[i][38]) 
 end
 
+-- print(csd)
 csv.save{path=paths.concat(opt.save, 'submission.csv'), data = csd}
