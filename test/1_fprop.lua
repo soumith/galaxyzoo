@@ -45,12 +45,12 @@ for f in paths.files(opt.data) do
    if paths.filep(f) and string.sub(f, #f-3) == '.jpg' then
       local out
       if opt.dryrun then
-	 out = torch.ones(128, 37)
+	 out = torch.ones(512, 37)
       else
 	 xlua.progress(index, 79935); index = index + 1;
 	 local im = image.load(f, 3)
-	 im = expandTestSample(im, true)  -- generate 128 test samples
-	 im = im:cuda()
+	 im = expandTestSample(im, false)  -- generate 512 test samples
+	 im = im:cuda()	 
 	 out = model:forward(im) -- fprop through model
 	 out = out:float()
 	 for i=1,out:size(1) do
