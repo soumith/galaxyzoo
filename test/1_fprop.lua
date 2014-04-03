@@ -11,13 +11,13 @@ cmd:text()
 cmd:text('Options:')
 cmd:option('-gpuid', 1, 'gpu id')
 cmd:option('-save', 'testresults',   'subdirectory to save results in')
-cmd:option('-id', 0, 'Give an id to tag these results with')
+cmd:option('-id', '0', 'Give an id to tag these results with')
 cmd:option('-model', 'none', 'path to model')
 cmd:option('-data', 'data/images_test_rev1_128', 'root dir of test images')
 cmd:option('-dryrun', false, 'fill output with ones.')
 cmd:text()
 opt = cmd:parse(arg or {})
-if opt.id == 0 then
+if opt.id == '0' then
    dok.error('Give valid id')
 end
 opt.save = paths.concat(opt.save, opt.id)
