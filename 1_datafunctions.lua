@@ -236,6 +236,12 @@ local rtransposer = nn.Transpose({4,1},{4,2},{4,3})
        - rotate 180
          - rotate further 0
          - rotate further 45
+         - rotate further 30
+         - rotate further 60
+         - rotate further 22.5
+         - rotate further 67.5
+         - 15 (math.pi/12)
+         - 75 (math.pi/2.4)
            - translate 0
            - translate -10px (x)   0px (y)
            - translate +10px (x)   0px (y)
@@ -251,6 +257,12 @@ local rtransposer = nn.Transpose({4,1},{4,2},{4,3})
        - rotate 180
          - rotate further 0
          - rotate further 45
+         - rotate further 30
+         - rotate further 60
+         - rotate further 22.5
+         - rotate further 67.5
+         - 15 (math.pi/12)
+         - 75 (math.pi/2.4)
            - translate 0
            - translate -10px (x)   0px (y)
            - translate +10px (x)   0px (y)
@@ -259,7 +271,7 @@ local rtransposer = nn.Transpose({4,1},{4,2},{4,3})
            - translate -10px (x) -10px (y)
            - translate +10px (x) -10px (y)
            - translate +10px (x) +10px (y)
-      Total number: 2 * 4 * 2 * 8 = 128
+      Total number: 2 * 4 * 8 * 8 = 128
    ]]--
 local function test_t(im, o)
    local x1 = math.ceil((loadSize[2] - sampleSize[2])/2)
@@ -280,24 +292,42 @@ local function test_rt(im, o)
    -- rotate further 45
    local im2 =image.rotate(im, math.pi/4)   
    test_t(im2, o[{{9,16},{},{},{}}])
+   -- rotate further 30
+   im2 =image.rotate(im, math.pi/6)   
+   test_t(im2, o[{{17,24},{},{},{}}])
+   -- rotate further 60
+   im2 =image.rotate(im, math.pi/3)
+   test_t(im2, o[{{25,32},{},{},{}}])
+   -- rotate further 22.5
+   im2 =image.rotate(im, math.pi/8)
+   test_t(im2, o[{{33,40},{},{},{}}])
+   -- rotate further 67.5
+   im2 =image.rotate(im, 3*math.pi/8)
+   test_t(im2, o[{{41,48},{},{},{}}])
+   -- rotate further 15
+   im2 =image.rotate(im, math.pi/12)
+   test_t(im2, o[{{49,56},{},{},{}}])
+   -- rotate further 75
+   im2 =image.rotate(im, 5*math.pi/12)
+   test_t(im2, o[{{57,64},{},{},{}}])
 end
 
 local function test_rrt(im, o, lightTesting)
    -- rotate 0
-   test_rt(im, o[{{1,16},{},{},{}}])
+   test_rt(im, o[{{1,64},{},{},{}}])
    if not lightTesting then
       -- rotate -90
       local minus90 = torch.Tensor(im:size())
       for i=1,3 do
 	 minus90[i] = im[i]:t()
       end
-      test_rt(minus90, o[{{17,32},{},{},{}}])
+      test_rt(minus90, o[{{65,128},{},{},{}}])
       -- rotate 90
       local plus90 = image.hflip(image.vflip(minus90))
-      test_rt(plus90, o[{{33,48},{},{},{}}])
+      test_rt(plus90, o[{{129,192},{},{},{}}])
       -- rotate 180
       local plus180 = image.hflip(image.vflip(im))
-      test_rt(plus180, o[{{49,64},{},{},{}}])
+      test_rt(plus180, o[{{193,256},{},{},{}}])
    end
 end
 function expandTestSample(im, lightTesting)
@@ -307,11 +337,11 @@ function expandTestSample(im, lightTesting)
       o = torch.Tensor(16, sampleSize[1], sampleSize[2], sampleSize[3])
       test_rrt(im, o[{{1,16},{},{},{}}], lightTesting)
    else
-      o = torch.Tensor(128, sampleSize[1], sampleSize[2], sampleSize[3])
+      o = torch.Tensor(512, sampleSize[1], sampleSize[2], sampleSize[3])
       -- original
-      test_rrt(im, o[{{1,64},{},{},{}}], lightTesting)
+      test_rrt(im, o[{{1,256},{},{},{}}], lightTesting)
       -- vflip
-      test_rrt(image.vflip(im), o[{{65,128},{},{},{}}], lightTesting)
+      test_rrt(image.vflip(im), o[{{257,512},{},{},{}}], lightTesting)
    end
    for i=1,o:size(1) do
       o[i]:add(-o[i]:mean())
