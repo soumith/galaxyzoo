@@ -331,7 +331,7 @@ local function test_rrt(im, o, lightTesting)
    end
 end
 function expandTestSample(im, lightTesting)
-   -- produce the 128 combos, given an input image (3D tensor)
+   -- produce the 512 combos, given an input image (3D tensor)
    local o
    if lightTesting then
       o = torch.Tensor(16, sampleSize[1], sampleSize[2], sampleSize[3])

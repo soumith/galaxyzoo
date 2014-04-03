@@ -147,9 +147,13 @@ end
 
 -- sanity check of test variation generator
 if opt and opt.dataTest then
+   local transposer = nn.Transpose({1,4},{1,3},{1,2})
+   local rtransposer = nn.Transpose({4,1},{4,2},{4,3})
    local lena = expandTestSample(image.scale(image.lena(), loadSize[2], loadSize[3]))
    image.display{image=rtransposer:forward(lena), nrow=16}
-   local testImage = rtransposer:forward(getTest(1):float())
+   print(#getTest(1))
+   local testImage = rtransposer:forward(getTest(1))
+   print(#testImage)
    image.display{image=testImage[1], legend='original-image after mean'}
    image.display{image=testImage, nrow=16}
    local a,b = getBatch(128)
