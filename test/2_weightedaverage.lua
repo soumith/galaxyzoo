@@ -26,24 +26,29 @@ for f in paths.files(opt.input) do
    end
 end
 print(dirs)
+weights = {.4, .1, .4, .1}
+print(weights)
 
 nSamples = 79975
+nBatch = 16
 local out = torch.Tensor(nSamples, 38)
 
 local index = 1
 -- for each file in first folder,
 for f in paths.files(dirs[1]) do
-   if not paths.dirp(paths.concat(dirs[1], f)) then 
-      local o = torch.Tensor(#dirs, 38)
-      o[{{}, {1}}]:fill(tonumber(f))
+   if not paths.dirp(paths.concat(dirs[1], f)) then
+      local o = torch.Tensor(38)
+      o[1] = tonumber(f)
       for i=1,#dirs do
 	 -- load the same filename from all folders
-	 local ot = torch.load(paths.concat(dirs[i], f))
-	 -- join the tensors
-	 o[{{i},{2, 38}}] = ot
+	 local fname = paths.concat(dirs[i], f)
+	 local ot = torch.load(fname)
+	 local startidx = (i-1)*nBatch + 1
+	 -- take the mean, weight it
+	 ot = ot:mean(1)[1]:mul(weights[i])
+	 -- add it
+	 o[{{2, 38}}] = o[{{2, 38}}] + ot
       end
-      -- average the tensors
-      o = o:mean(1)[1]
       assert(tostring(o[1]) == f, 'file name got corrupted')
       out[index] = o
       index = index + 1
