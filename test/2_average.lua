@@ -33,14 +33,13 @@ local index = 1
 -- for each file in first folder,
 for f in paths.files(dirs[1]) do
    if not paths.dirp(paths.concat(dirs[1], f)) then 
-      local o = torch.Tensor(#dirs * 128, 38)
+      local o = torch.Tensor(#dirs, 38)
       o[{{}, {1}}]:fill(tonumber(f))
       for i=1,#dirs do
 	 -- load the same filename from all folders
 	 local ot = torch.load(paths.concat(dirs[i], f))
-	 local startidx = (i-1)*128 + 1
 	 -- join the tensors
-	 o[{{startidx, startidx+127},{2, 38}}] = ot
+	 o[{{i},{2, 38}}] = ot
       end
       -- average the tensors
       o = o:mean(1)[1]
