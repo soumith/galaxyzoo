@@ -3,7 +3,7 @@ Install Notes
 Install on Ubuntu or OSX
 
 Install torch using
-curl -s https://raw.github.com/torch/ezinstall/master/install-luajit+torch | bash
+curl -s https://raw.github.com/torch/ezinstall/master/install-all | bash
 
 
 Then install the rest of the needed packages:
