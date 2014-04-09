@@ -314,8 +314,8 @@ function expandTestSample(im, lightTesting)
    -- produce the 256 combos, given an input image (3D tensor)
    local o
    if lightTesting then
-      o = torch.Tensor(16, sampleSize[1], sampleSize[2], sampleSize[3])
-      test_rrt(im, o[{{1,16},{},{},{}}], lightTesting)
+      o = torch.Tensor(32, sampleSize[1], sampleSize[2], sampleSize[3])
+      test_rrt(im, o[{{1,32},{},{},{}}], lightTesting)
    else
       o = torch.Tensor(256, sampleSize[1], sampleSize[2], sampleSize[3])
       -- original
