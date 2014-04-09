@@ -1,7 +1,6 @@
 require 'csv'
 require 'xlua'
 require 'paths'
-require 'torchffi'
 require 'nn'
 require 'image'
 
