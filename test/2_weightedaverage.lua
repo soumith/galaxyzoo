@@ -2,7 +2,7 @@
 require 'env'
 require 'torch'
 require 'paths'
-require 'csv'
+require 'csvigo'
 torch.setdefaulttensortype('torch.FloatTensor')
 
 cmd = torch.CmdLine()
@@ -138,4 +138,4 @@ for i=1,nSamples do
 end
 
 -- print(csd)
-csv.save{path=paths.concat(opt.save, 'submission.csv'), data = csd}
+csvigo.save{path=paths.concat(opt.save, 'submission.csv'), data = csd}

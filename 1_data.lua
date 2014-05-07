@@ -1,4 +1,4 @@
-require 'csv'
+require 'csvigo'
 require 'xlua'
 require 'paths'
 require 'nn'
@@ -9,7 +9,7 @@ dofile('1_datafunctions.lua')
 print '==> 1_data.lua'
 print('==> Loading data')
 if not paths.filep('cache/data.t7') then
-   local csvdata = csv.load{path='data/training_solutions_rev1.csv', verbose=false}
+   local csvdata = csvigo.load{path='data/training_solutions_rev1.csv', verbose=false}
    nSamples = #csvdata.GalaxyID
    data = torch.Tensor(nSamples, 38)
    for i=1,nSamples do
