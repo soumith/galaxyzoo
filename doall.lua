@@ -37,7 +37,6 @@ bmode = 'DHWB' --  -- depth x height x width x batch
 loadSize   = {3, 128, 128}
 sampleSize = {3, 111, 111}
 dataroot = 'data/images_training_rev1_128'
-archdesc = '-580'
 
 lightTesting = true
 
@@ -45,7 +44,7 @@ epochSize = opt.batchSize * 1000
 
 dofile('1_data.lua')
 if not opt.dataTest then
-   dofile('i' .. sampleSize[2] .. archdesc ..'/2_model.lua')
+   dofile('2_model.lua')
    dofile('3_train.lua')
    dofile('4_test.lua')
 
