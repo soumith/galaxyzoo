@@ -118,19 +118,11 @@ end
 
 function getBatch(n)
    local img, gt, gtu
-   if bmode == 'BDHW' then
-      img = torch.Tensor(n, sampleSize[1], sampleSize[2], sampleSize[3])
-   else      
-      img = torch.Tensor(sampleSize[1], sampleSize[2], sampleSize[3], n)
-   end
+   img = torch.Tensor(n, sampleSize[1], sampleSize[2], sampleSize[3])
    gt = torch.Tensor(n, 37)
    gtu = torch.Tensor(n, 37)
    for i=1,n do
-      if bmode == 'BDHW' then
-	 img[i], gt[i], gtu[i] = getSample()
-      else
-	 img[{{},{},{},i}], gt[i], gtu[i] = getSample()
-      end
+      img[i], gt[i], gtu[i] = getSample()
    end
    return img, gt, gtu
 end
@@ -146,17 +138,15 @@ end
 
 -- sanity check of test variation generator
 if opt and opt.dataTest then
-   local transposer = nn.Transpose({1,4},{1,3},{1,2})
-   local rtransposer = nn.Transpose({4,1},{4,2},{4,3})
    local lena = expandTestSample(image.scale(image.lena(), loadSize[2], loadSize[3]))
-   image.display{image=rtransposer:forward(lena), nrow=16}
+   image.display{image=lena, nrow=16}
    print(#getTest(1))
-   local testImage = rtransposer:forward(getTest(1))
+   local testImage = getTest(1)
    print(#testImage)
    image.display{image=testImage[1], legend='original-image after mean'}
    image.display{image=testImage, nrow=16}
    local a,b = getBatch(128)
-   image.display{image=rtransposer:forward(a:float()), nrow=16}
+   image.display{a:float(), nrow=16}
    print(#a)
    print(#b)
 end

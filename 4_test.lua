@@ -47,9 +47,6 @@ function test()
    print('')
    -- save L1 filters to image file, just for funsies
    local weight_l1 = model.modules[1].modules[1].weight:float()
-   if bmode == 'DHWB' then
-      weight_l1 = weight_l1:transpose(4,3):transpose(3,2):transpose(2,1)
-   end
    local filters_l1 = {}
    for i=1,weight_l1:size(1) do
       for j=1,weight_l1:size(2) do

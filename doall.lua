@@ -29,8 +29,6 @@ torch.manualSeed(opt.seed)
 cutorch.setDevice(opt.gpuid)
 
 
-bmode = 'DHWB' --  -- depth x height x width x batch
-
 -- loadSize   = {3, 256, 256}
 -- sampleSize = {3, 223, 223}
 -- dataroot = 'data/images_training_rev1_256'

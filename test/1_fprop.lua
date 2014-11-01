@@ -36,7 +36,6 @@ if not opt.dryrun then
 end
 os.execute('mkdir -p ' .. opt.save)
 
-bmode = 'DHWB' -- depth x height x width x batch
 index = 1
 for f in paths.files(opt.data) do
    -- for each image in dir,

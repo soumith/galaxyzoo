@@ -14,19 +14,18 @@ classifierHidden = {512}
 dropout_p = 0.5
 
 features = nn.Sequential()
-features:add(nn.SpatialConvolutionCUDA(fSize[1], fSize[2], 9, 9, 2, 2)) -- (111 - 9 + 2)/2 = 52
+features:add(nn.SpatialConvolutionMM(fSize[1], fSize[2], 9, 9, 2, 2)) -- (111 - 9 + 2)/2 = 52
 features:add(nn.Threshold(0,1e-6))
-features:add(nn.SpatialMaxPoolingCUDA(2,2,2,2)) -- 26
-features:add(nn.SpatialConvolutionCUDA(fSize[2], fSize[3], 5, 5)) -- 22
+features:add(nn.SpatialMaxPooling(2,2,2,2)) -- 26
+features:add(nn.SpatialConvolutionMM(fSize[2], fSize[3], 5, 5)) -- 22
 features:add(nn.Threshold(0,1e-6))
-features:add(nn.SpatialMaxPoolingCUDA(2,2,2,2)) -- 11
-features:add(nn.SpatialConvolutionCUDA(fSize[3], fSize[4], 4, 4)) -- 8
+features:add(nn.SpatialMaxPooling(2,2,2,2)) -- 11
+features:add(nn.SpatialConvolutionMM(fSize[3], fSize[4], 4, 4)) -- 8
 features:add(nn.Threshold(0,1e-6))
-features:add(nn.SpatialConvolutionCUDA(fSize[4], fSize[5], 3, 3)) -- 6
+features:add(nn.SpatialConvolutionMM(fSize[4], fSize[5], 3, 3)) -- 6
 features:add(nn.Threshold(0,1e-6))
-features:add(nn.SpatialMaxPoolingCUDA(2,2,2,2)) -- 3
-features:add(nn.Transpose({4,1},{4,2},{4,3}))
-features:add(nn.Reshape(featuresOut))
+features:add(nn.SpatialMaxPooling(2,2,2,2)) -- 3
+features:add(nn.View(featuresOut))
 
 dropouts = {}
 for i=1,22 do

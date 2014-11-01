@@ -225,8 +225,6 @@ function branchIndices(n)
    elseif n == 11 then return {{32,37}} end
 end
 
-local transposer = nn.Transpose({1,4},{1,3},{1,2})
-local rtransposer = nn.Transpose({4,1},{4,2},{4,3})
    -- have 128 deterministic outputs for each input
    --[[
       original
@@ -330,6 +328,6 @@ function expandTestSample(im, lightTesting)
    if bmode == 'BDHW' then
       return o
    else
-      return transposer:forward(o)
+      return o
    end
 end
